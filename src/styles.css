@@ -583,6 +583,88 @@ main {
   color: var(--ink-soft);
 }
 
+.colophon a,
+.wordmark {
+  text-decoration: none;
+}
+
+.checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  padding: var(--s4);
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.checkout-form label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+  color: var(--ink-soft);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.checkout-form input {
+  border: 1px solid var(--line);
+  background: var(--ground);
+  color: var(--ink);
+  padding: 12px;
+  font-weight: 400;
+}
+
+.form-error {
+  color: var(--wine-deep);
+  font-weight: 600;
+}
+
+.admin {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: var(--s6) var(--s4) var(--s7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s4);
+}
+
+.admin h1 {
+  font-family: var(--display);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+}
+
+.admin-login {
+  max-width: 360px;
+  padding: 0;
+  flex: none;
+}
+
+.admin-scroll {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 12px 8px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.admin-table th {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+
 .drawer-root {
   position: fixed;
   inset: 0;

@@ -1,62 +1,104 @@
 # Bia's Collection
 
-A basic interactive clothing shop. Browse dummy men's and women's pieces, choose a size, and add them to a bag. The bag stays in this browser. Nothing is charged and no order is sent.
+A clothing shop with a React storefront and an Express API. Products, stock, and cash-on-delivery orders are stored in cloud PostgreSQL. Card details are never collected, and orders are not marked paid.
 
 ## Features
 
-- Twelve demonstration products, six for men and six for women
-- Filter by All, Men, or Women
-- Search by garment name or cloth
-- Sort by featured order, price, or name
-- Product page with a description and size choice
-- Add to bag only after a size is selected
-- Bag panel with quantity changes, removal, and a running total
-- Bag saved in the browser with `localStorage`
-- Clear bag empties the local bag and states that nothing was charged
-- Layout for desktop and narrow screens
+- Twelve sample products, six for men and six for women, loaded from the API
+- Filter, search, and sort the catalog
+- Product page with a description, size choice, and stock
+- Bag with quantity changes and removal
+- Checkout collects the buyer's name, email, phone, and shipping address
+- The API checks stock and calculates the total from database prices
+- The order and the stock update are saved in one database transaction
+- Confirmation shows an order reference
+- Staff page at `/admin` lists orders and requires a password
+- Customer details are not available from public API routes
 
 ## Technologies
 
-- React 19
-- Vite 8
+- React 19 and Vite 8
+- Express 5
+- PostgreSQL on [Neon](https://neon.tech)
 - Fonts: Unbounded and Figtree, self-hosted through Fontsource
-- No backend, database, or payment service
+
+## Neon setup
+
+1. Create a Neon account at https://neon.tech and sign in.
+2. Create a project named `shopnest`.
+3. Open the project dashboard and copy the **pooled** connection string.
+4. On your computer, copy `.env.example` to `.env`.
+5. Paste the connection string into `DATABASE_URL` in that local file.
+6. Choose your own `ADMIN_PASSWORD` (at least 12 characters) and `SESSION_SECRET` (at least 24 characters).
+7. Leave `.env` on this machine. Do not commit it, and do not paste those values into chat or into frontend files.
+
+The React app only calls `/api`. It never receives `DATABASE_URL`.
 
 ## Install and run locally
 
-Requires Node.js 20 or newer.
+Requires Node.js 20 or newer, plus the Neon project above.
 
 ```bash
 git clone https://github.com/Rabia-cloud-123/shopnest.git
 cd shopnest
 npm install
+```
+
+Create the local env file, then edit it. On Windows:
+
+```bash
+copy .env.example .env
+```
+
+On macOS or Linux:
+
+```bash
+cp .env.example .env
+```
+
+Create the tables and sample products:
+
+```bash
+npm run migrate
+npm run seed
 npm run dev
 ```
 
-Open the URL Vite prints, usually `http://localhost:5173`.
+Open http://localhost:5173. The API runs on port 3001, and Vite proxies `/api` to it.
 
-To build and preview the production files:
+`npm run seed` inserts sample products only when they are missing. It does not reset stock after orders.
+
+To serve the built site and the API from one process:
 
 ```bash
 npm run build
-npm run preview
+npm start
 ```
 
-No environment variables are required. Product names, prices, and descriptions live in `src/data/products.js`.
+## Environment variables
+
+| Name | Purpose |
+| --- | --- |
+| `DATABASE_URL` | Neon Postgres connection string |
+| `ADMIN_PASSWORD` | Password for `/admin` |
+| `SESSION_SECRET` | Signs the staff session cookie |
+| `PORT` | API port, default `3001` |
+
+See `.env.example`. No real credentials belong in Git.
 
 ## Project structure
 
 ```
-index.html                 Page entry and tab title
-public/favicon.png         Tab icon
-public/products            Demonstration photographs
-src/main.jsx               React mount
-src/App.jsx                Shop, product view, and bag
-src/cart.js                Bag state, saved in localStorage
-src/data/products.js       Dummy catalog
-src/styles.css             Layout and visual styles
+server/index.js            API, staff routes, and production static files
+server/orders.js           Checkout transaction
+server/migrations/         SQL migrations
+server/seed-data.js        Sample catalog
+src/App.jsx                Shop, bag, and checkout
+src/Admin.jsx              Staff order list
+src/cart.js                Bag draft saved in this browser until checkout
+public/products            Product photographs
 ```
 
-## Notes
+## Orders
 
-Prices, names, and descriptions are sample data. Photographs are stock images used so the demo has clothing to look at. This shop does not take payment or create an account.
+Checkout is cash on delivery. A successful order is stored with status `placed` and payment method `cash_on_delivery`. The confirmation reference looks like `BC-XXXXXXXX`. Staff can read orders only after signing in at `/admin`.

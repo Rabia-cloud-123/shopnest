@@ -1,11 +1,15 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { getProducts, placeOrder } from './api.js'
 import { useCart } from './cart.js'
-import { departmentLabel, formatPrice, products } from './data/products.js'
+import { departmentLabel, formatPrice } from './data/products.js'
 
 const departments = ['all', 'men', 'women']
 
 export default function App() {
   const cart = useCart()
+  const [products, setProducts] = useState([])
+  const [catalogStatus, setCatalogStatus] = useState('loading')
+  const [catalogError, setCatalogError] = useState('')
   const [department, setDepartment] = useState('all')
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('featured')
@@ -13,7 +17,6 @@ export default function App() {
   const [pickingId, setPickingId] = useState(null)
   const [cartOpen, setCartOpen] = useState(false)
   const [notice, setNotice] = useState('')
-  const [confirmed, setConfirmed] = useState(false)
   const bagButtonRef = useRef(null)
 
   const active = products.find((product) => product.id === activeId) ?? null
@@ -34,20 +37,72 @@ export default function App() {
     if (sort === 'price-desc') sorted.sort((a, b) => b.price - a.price)
     if (sort === 'name') sorted.sort((a, b) => a.name.localeCompare(b.name))
     return sorted
-  }, [department, query, sort])
+  }, [products, department, query, sort])
 
   function openCart() {
-    setConfirmed(false)
     setCartOpen(true)
   }
 
   function addToBag(product, size) {
+    const existing = cart.lines.find((line) => line.id === product.id && line.size === size)
+    const nextQuantity = (existing?.qty ?? 0) + 1
+    if (product.stockQuantity < 1) {
+      setNotice(`${product.name} is out of stock.`)
+      return
+    }
+    if (nextQuantity > product.stockQuantity) {
+      setNotice(`Only ${product.stockQuantity} ${product.name} left.`)
+      return
+    }
     cart.add(product, size)
     setPickingId(null)
     setNotice(`${product.name} added in size ${size}.`)
-    setConfirmed(false)
     setCartOpen(true)
   }
+
+  function changeQty(id, size, qty) {
+    const product = products.find((item) => item.id === id)
+    if (product && qty > product.stockQuantity) {
+      setNotice(`Only ${product.stockQuantity} ${product.name} left.`)
+      cart.setQty(id, size, product.stockQuantity)
+      return
+    }
+    cart.setQty(id, size, qty)
+  }
+
+  async function loadProducts({ quiet = false } = {}) {
+    if (!quiet) {
+      setCatalogStatus('loading')
+      setCatalogError('')
+    }
+    try {
+      setProducts(await getProducts())
+      setCatalogStatus('ready')
+    } catch (error) {
+      if (!quiet) {
+        setCatalogError(error.message)
+        setCatalogStatus('error')
+      }
+    }
+  }
+
+  useEffect(() => {
+    let ignore = false
+    getProducts()
+      .then((next) => {
+        if (ignore) return
+        setProducts(next)
+        setCatalogStatus('ready')
+      })
+      .catch((error) => {
+        if (ignore) return
+        setCatalogError(error.message)
+        setCatalogStatus('error')
+      })
+    return () => {
+      ignore = true
+    }
+  }, [])
 
   function openProduct(id) {
     setActiveId(id)
@@ -71,10 +126,9 @@ export default function App() {
     return () => document.body.classList.remove('bag-open')
   }, [cartOpen])
 
-  const featured = [
-    products.find((product) => product.id === 'heavyweight-tee'),
-    products.find((product) => product.id === 'camel-coat'),
-  ]
+  const featured = ['heavyweight-tee', 'camel-coat']
+    .map((id) => products.find((product) => product.id === id))
+    .filter(Boolean)
 
   return (
     <>
@@ -131,7 +185,16 @@ export default function App() {
       </header>
 
       <main id="catalog">
-        {active ? (
+        {catalogStatus === 'loading' ? (
+          <p className="empty-rail">Loading clothes…</p>
+        ) : catalogStatus === 'error' ? (
+          <div className="empty-rail">
+            <p>{catalogError}</p>
+            <button type="button" onClick={loadProducts}>
+              Try again
+            </button>
+          </div>
+        ) : active ? (
           <ProductDetail
             product={active}
             onBack={() => setActiveId(null)}
@@ -143,8 +206,8 @@ export default function App() {
               <div className="opening-copy">
                 <h1>Clothes for the week you actually wear.</h1>
                 <p>
-                  Twelve demonstration pieces, split between men and women. Pick a size, add it to
-                  the bag, and the total stays in this browser.
+                  Twelve pieces, split between men and women. Pick a size, then check out with cash
+                  on delivery. The order is saved with the shop.
                 </p>
               </div>
               <div className="feature-row">
@@ -230,23 +293,30 @@ export default function App() {
       </main>
 
       <footer className="colophon">
-        <p>Bia's Collection is a demonstration shop. Prices are sample figures. Nothing here is for sale.</p>
+        <p>
+          Cash on delivery. No card payment.{' '}
+          <a href="/admin">Staff</a>
+        </p>
       </footer>
 
       <CartDrawer
         open={cartOpen}
+        products={products}
         lines={cart.lines}
-        confirmed={confirmed}
         onClose={() => {
           setCartOpen(false)
           bagButtonRef.current?.focus()
         }}
-        onQty={cart.setQty}
+        onQty={changeQty}
         onRemove={cart.remove}
-        onConfirm={() => {
+        onClear={() => {
           cart.clear()
-          setConfirmed(true)
-          setNotice('Bag cleared. Nothing was charged.')
+          setNotice('Bag cleared.')
+        }}
+        onPlaced={(order) => {
+          cart.clear()
+          setNotice(`Order ${order.reference} placed.`)
+          loadProducts({ quiet: true })
         }}
         onKeepShopping={() => setCartOpen(false)}
       />
@@ -284,8 +354,8 @@ function ProductCard({ product, picking, onOpen, onStartPick, onAdd }) {
             </div>
           </div>
         ) : (
-          <button className="add" type="button" onClick={onStartPick}>
-            Add to bag
+          <button className="add" type="button" onClick={onStartPick} disabled={product.stockQuantity < 1}>
+            {product.stockQuantity < 1 ? 'Out of stock' : 'Add to bag'}
           </button>
         )}
       </div>
@@ -311,6 +381,7 @@ function ProductDetail({ product, onBack, onAdd }) {
           <p className="detail-text">{product.description}</p>
           <p className="detail-fabric">
             {departmentLabel(product.department)} · {product.fabric}
+            {product.stockQuantity < 1 ? ' · Out of stock' : ` · ${product.stockQuantity} in stock`}
           </p>
           <div className="sizes" role="group" aria-labelledby={sizeGroup}>
             <p id={sizeGroup}>Size</p>
@@ -331,10 +402,10 @@ function ProductDetail({ product, onBack, onAdd }) {
           <button
             className="add add-large"
             type="button"
-            disabled={!size}
+            disabled={!size || product.stockQuantity < 1}
             onClick={() => size && onAdd(product, size)}
           >
-            {size ? `Add size ${size} to bag` : 'Choose a size'}
+            {product.stockQuantity < 1 ? 'Out of stock' : size ? `Add size ${size} to bag` : 'Choose a size'}
           </button>
         </div>
       </div>
@@ -342,9 +413,24 @@ function ProductDetail({ product, onBack, onAdd }) {
   )
 }
 
-function CartDrawer({ open, lines, confirmed, onClose, onQty, onRemove, onConfirm, onKeepShopping }) {
+const emptyCheckout = {
+  fullName: '',
+  email: '',
+  phone: '',
+  address: '',
+  city: '',
+  postalCode: '',
+  country: '',
+}
+
+function CartDrawer({ open, products, lines, onClose, onQty, onRemove, onClear, onPlaced, onKeepShopping }) {
   const titleId = useId()
   const closeRef = useRef(null)
+  const [step, setStep] = useState('bag')
+  const [form, setForm] = useState(emptyCheckout)
+  const [submitting, setSubmitting] = useState(false)
+  const [formError, setFormError] = useState('')
+  const [receipt, setReceipt] = useState(null)
   const resolved = lines
     .map((line) => {
       const product = products.find((item) => item.id === line.id)
@@ -357,6 +443,42 @@ function CartDrawer({ open, lines, confirmed, onClose, onQty, onRemove, onConfir
     if (open) closeRef.current?.focus()
   }, [open])
 
+  useEffect(() => {
+    if (step === 'done' && lines.length > 0) {
+      setStep('bag')
+      setReceipt(null)
+    }
+  }, [lines.length, step])
+
+  function updateField(event) {
+    const { name, value } = event.target
+    setForm((current) => ({ ...current, [name]: value }))
+  }
+
+  async function submitOrder(event) {
+    event.preventDefault()
+    setSubmitting(true)
+    setFormError('')
+    try {
+      const order = await placeOrder({
+        ...form,
+        items: resolved.map((line) => ({
+          productId: line.id,
+          size: line.size,
+          quantity: line.qty,
+        })),
+      })
+      setReceipt(order)
+      setStep('done')
+      setForm(emptyCheckout)
+      onPlaced(order)
+    } catch (error) {
+      setFormError(error.message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   return (
     <div className={`drawer-root${open ? ' is-open' : ''}`} inert={open ? undefined : true}>
       <button className="drawer-scrim" type="button" aria-label="Close bag" onClick={onClose} />
@@ -367,17 +489,29 @@ function CartDrawer({ open, lines, confirmed, onClose, onQty, onRemove, onConfir
         aria-labelledby={titleId}
       >
         <header className="drawer-head">
-          <h2 id={titleId}>Your bag</h2>
+          <h2 id={titleId}>{step === 'done' ? 'Order placed' : 'Your bag'}</h2>
           <button ref={closeRef} className="icon-button" type="button" onClick={onClose}>
             <span className="sr-only">Close</span>
             <CloseIcon />
           </button>
         </header>
 
-        {confirmed ? (
+        {step === 'done' && receipt ? (
           <div className="drawer-confirm">
-            <p>Bag cleared. This is a demonstration, so nothing was charged and no order was sent.</p>
-            <button className="add add-large" type="button" onClick={onKeepShopping}>
+            <p>
+              Reference <strong>{receipt.reference}</strong>. Pay the courier in cash when the order
+              arrives. This order is not marked paid.
+            </p>
+            <p className="price">{formatPrice(receipt.total)}</p>
+            <button
+              className="add add-large"
+              type="button"
+              onClick={() => {
+                setStep('bag')
+                setReceipt(null)
+                onKeepShopping()
+              }}
+            >
               Keep browsing
             </button>
           </div>
@@ -388,6 +522,24 @@ function CartDrawer({ open, lines, confirmed, onClose, onQty, onRemove, onConfir
               Browse clothes
             </button>
           </div>
+        ) : step === 'details' ? (
+          <form className="checkout-form" onSubmit={submitOrder}>
+            <CheckoutField label="Full name" name="fullName" value={form.fullName} autoComplete="name" onChange={updateField} />
+            <CheckoutField label="Email" name="email" type="email" value={form.email} autoComplete="email" onChange={updateField} />
+            <CheckoutField label="Phone" name="phone" type="tel" value={form.phone} autoComplete="tel" onChange={updateField} />
+            <CheckoutField label="Address" name="address" value={form.address} autoComplete="street-address" onChange={updateField} />
+            <CheckoutField label="City" name="city" value={form.city} autoComplete="address-level2" onChange={updateField} />
+            <CheckoutField label="Postal code" name="postalCode" value={form.postalCode} autoComplete="postal-code" onChange={updateField} />
+            <CheckoutField label="Country" name="country" value={form.country} autoComplete="country-name" onChange={updateField} />
+            {formError ? <p className="form-error">{formError}</p> : null}
+            <button className="add add-large" type="submit" disabled={submitting}>
+              {submitting ? 'Placing order…' : `Place order · ${formatPrice(total)}`}
+            </button>
+            <button className="text-button" type="button" onClick={() => setStep('bag')} disabled={submitting}>
+              Back to bag
+            </button>
+            <p className="fine">Cash on delivery. No card details are collected.</p>
+          </form>
         ) : (
           <>
             <ul className="bag-lines">
@@ -399,6 +551,9 @@ function CartDrawer({ open, lines, confirmed, onClose, onQty, onRemove, onConfir
                     <p>
                       {departmentLabel(line.product.department)} · Size {line.size}
                     </p>
+                    {line.qty > line.product.stockQuantity ? (
+                      <p>Only {line.product.stockQuantity} left.</p>
+                    ) : null}
                     <div className="qty">
                       <button
                         type="button"
@@ -412,6 +567,7 @@ function CartDrawer({ open, lines, confirmed, onClose, onQty, onRemove, onConfir
                         type="button"
                         onClick={() => onQty(line.id, line.size, line.qty + 1)}
                         aria-label={`Increase ${line.product.name} size ${line.size}`}
+                        disabled={line.qty >= line.product.stockQuantity}
                       >
                         +
                       </button>
@@ -435,15 +591,28 @@ function CartDrawer({ open, lines, confirmed, onClose, onQty, onRemove, onConfir
                 <span>Total</span>
                 <strong className="price">{formatPrice(total)}</strong>
               </p>
-              <button className="add add-large" type="button" onClick={onConfirm}>
+              <button className="add add-large" type="button" onClick={() => setStep('details')}>
+                Checkout
+              </button>
+              <button className="text-button" type="button" onClick={onClear}>
                 Clear bag
               </button>
-              <p className="fine">Demonstration only. No payment is taken.</p>
+              <p className="fine">Cash on delivery. The total is calculated by the shop.</p>
             </footer>
           </>
         )}
       </aside>
     </div>
+  )
+}
+
+function CheckoutField({ label, name, value, onChange, type = 'text', autoComplete }) {
+  const id = useId()
+  return (
+    <label htmlFor={id}>
+      {label}
+      <input id={id} name={name} type={type} value={value} autoComplete={autoComplete} onChange={onChange} required />
+    </label>
   )
 }
 

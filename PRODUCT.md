@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-delegated: interactive React app on Vite. The request rejected a static site and asked for modern languages and an interactive website. No deploy target was given.
+delegated: React and Vite storefront with an Express API and cloud PostgreSQL.
 
 ## Users
 
@@ -24,14 +24,15 @@ A single interactive storefront for both departments, with size-aware bag lines.
 
 ## Operating Context
 
-Runs locally in the browser through the Vite dev server. The bag is stored in the browser only.
+The storefront runs in the browser. Orders and stock are stored in cloud PostgreSQL through the API. The bag draft stays in the browser until checkout.
 
 ## Capabilities and Constraints
 
 - Dummy products only, split into men and women.
 - Add to bag requires a size.
 - Bag supports quantity changes, removal, and a running total.
-- No payments, accounts, inventory backend, or live orders. A confirm action only clears the local bag and states that nothing was charged.
+- Checkout is cash on delivery. Card details are not collected and orders are not marked paid.
+- Customer details and the order list are available only on the staff page.
 - The shop name is Bia's Collection.
 
 ## Evidence on Hand
