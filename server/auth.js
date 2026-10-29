@@ -71,5 +71,9 @@ export function setAdminCookie(response) {
 }
 
 export function clearAdminCookie(response) {
-  response.setHeader('Set-Cookie', `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0`)
+  const secure = process.env.NODE_ENV === 'production' ? '; Secure' : ''
+  response.setHeader(
+    'Set-Cookie',
+    `${COOKIE}=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0${secure}`,
+  )
 }

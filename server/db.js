@@ -5,11 +5,18 @@ loadEnv()
 
 const connectionString = requireEnv('DATABASE_URL')
 const local = /localhost|127\.0\.0\.1/.test(connectionString)
+const onVercel = Boolean(process.env.VERCEL)
+
+if (onVercel && !local && !connectionString.includes('-pooler')) {
+  console.error('DATABASE_URL on Vercel should be the Neon pooled connection string.')
+}
 
 export const pool = new pg.Pool({
   connectionString,
   ssl: local ? false : { rejectUnauthorized: false },
-  max: 10,
+  max: onVercel ? 1 : 10,
+  idleTimeoutMillis: 10_000,
+  connectionTimeoutMillis: 10_000,
 })
 
 pool.on('error', (error) => {

@@ -75,6 +75,17 @@ npm run build
 npm start
 ```
 
+## Deploy on Vercel
+
+The storefront and the API deploy as one Vercel project. Vite serves the site, and `api/index.js` runs the Express app for every `/api` request. `/admin` is rewritten to the storefront so the staff page loads on a refresh.
+
+1. Import https://github.com/Rabia-cloud-123/shopnest.git in Vercel.
+2. Leave the framework preset as Vite. The build command is `npm run build` and the output directory is `dist`.
+3. In Project Settings → Environment Variables, add `DATABASE_URL`, `ADMIN_PASSWORD`, and `SESSION_SECRET` for Production and Preview. Use the Neon **pooled** connection string (the hostname contains `-pooler`). Do not commit those values.
+4. Deploy. The tables and sample products already live in Neon, so a new deploy uses that same database.
+
+`npm run migrate` and `npm run seed` still run on your computer against `DATABASE_URL`. Run them again only if you point the project at an empty Neon database.
+
 ## Environment variables
 
 | Name | Purpose |
@@ -89,7 +100,9 @@ See `.env.example`. No real credentials belong in Git.
 ## Project structure
 
 ```
-server/index.js            API, staff routes, and production static files
+api/index.js               Vercel entry for the Express app
+vercel.json                Sends /api to that function and other routes to the storefront
+server/index.js            API, staff routes, and local production static files
 server/orders.js           Checkout transaction
 server/migrations/         SQL migrations
 server/seed-data.js        Sample catalog

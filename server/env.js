@@ -28,7 +28,9 @@ export function loadEnv() {
 export function requireEnv(name) {
   const value = process.env[name]
   if (!value) {
-    throw new Error(`${name} is not set. Add it to .env in the project root. See .env.example.`)
+    throw new Error(
+      `${name} is not set. Add it to .env locally, or to the Vercel project environment variables in production. See .env.example.`,
+    )
   }
   return value
 }

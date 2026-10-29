@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 import express from 'express'
 import { loadEnv, requireEnv } from './env.js'
 import { pool } from './db.js'
@@ -16,6 +17,28 @@ loadEnv()
 
 const app = express()
 app.disable('x-powered-by')
+
+if (process.env.VERCEL) {
+  app.use((request, _response, next) => {
+    const current = request.url || ''
+    const pathname = current.split('?')[0]
+    if (pathname === '/api' || pathname.startsWith('/api/')) {
+      next()
+      return
+    }
+    const header =
+      request.headers['x-invoke-path'] ||
+      request.headers['x-forwarded-uri'] ||
+      request.headers['x-vercel-original-path']
+    const original = Array.isArray(header) ? header[0] : header
+    if (typeof original === 'string' && (original === '/api' || original.startsWith('/api/'))) {
+      const query = current.includes('?') ? current.slice(current.indexOf('?')) : ''
+      request.url = original.includes('?') ? original : `${original}${query}`
+    }
+    next()
+  })
+}
+
 app.use(express.json({ limit: '32kb' }))
 
 function asyncRoute(handler) {
@@ -213,32 +236,48 @@ app.use((error, _request, response, _next) => {
   })
 })
 
-const port = Number(process.env.PORT) || 3001
+export { app }
 
-try {
+function assertRuntimeConfig() {
   const adminPassword = requireEnv('ADMIN_PASSWORD')
   const sessionSecret = requireEnv('SESSION_SECRET')
   if (adminPassword.length < 12) {
-    throw new Error('ADMIN_PASSWORD must be at least 12 characters. Set it in .env.')
+    throw new Error('ADMIN_PASSWORD must be at least 12 characters. Set it in .env or in Vercel.')
   }
   if (sessionSecret.length < 24) {
-    throw new Error('SESSION_SECRET must be at least 24 characters. Set it in .env.')
+    throw new Error('SESSION_SECRET must be at least 24 characters. Set it in .env or in Vercel.')
   }
-} catch (error) {
-  console.error(error.message)
-  await pool.end()
-  process.exit(1)
 }
 
-const server = app.listen(port, () => {
-  console.log(`API listening on http://localhost:${port}`)
-})
+function runningAsCli() {
+  if (process.env.VERCEL) return false
+  const entry = process.argv[1]
+  if (!entry) return false
+  return import.meta.url === pathToFileURL(entry).href
+}
 
-function shutdown() {
-  server.close(() => {
-    pool.end()
+if (runningAsCli()) {
+  try {
+    assertRuntimeConfig()
+  } catch (error) {
+    console.error(error.message)
+    await pool.end()
+    process.exit(1)
+  }
+
+  const port = Number(process.env.PORT) || 3001
+  const server = app.listen(port, () => {
+    console.log(`API listening on http://localhost:${port}`)
   })
-}
 
-process.on('SIGTERM', shutdown)
-process.on('SIGINT', shutdown)
+  function shutdown() {
+    server.close(() => {
+      pool.end()
+    })
+  }
+
+  process.on('SIGTERM', shutdown)
+  process.on('SIGINT', shutdown)
+} else {
+  assertRuntimeConfig()
+}
