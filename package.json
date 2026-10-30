@@ -14,7 +14,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/cormorant-garamond": "^5.3.0",
     "@fontsource/figtree": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
     "@fontsource/unbounded": "^5.3.0",
     "express": "^5.3.0",
     "pg": "^8.23.1",

@@ -4,13 +4,28 @@ import { useCart } from './cart.js'
 import { departmentLabel, formatPrice } from './data/products.js'
 
 const departments = ['all', 'men', 'women']
+const bestsellers = new Set(['heavyweight-tee', 'camel-coat'])
+const arrivals = new Set(['ivory-coat', 'embroidered-shirt'])
+
+function badgeFor(product) {
+  if (bestsellers.has(product.id)) return 'Bestseller'
+  if (arrivals.has(product.id)) return 'New arrival'
+  return ''
+}
+
+function readDepartment() {
+  const value = new URLSearchParams(window.location.search).get('department')
+  return value === 'men' || value === 'women' ? value : 'all'
+}
 
 export default function App() {
   const cart = useCart()
   const [products, setProducts] = useState([])
   const [catalogStatus, setCatalogStatus] = useState('loading')
   const [catalogError, setCatalogError] = useState('')
-  const [department, setDepartment] = useState('all')
+  const [department, setDepartment] = useState(readDepartment)
+  const [veil, setVeil] = useState(null)
+  const page = window.location.pathname === '/about' ? 'about' : 'shop'
   const [query, setQuery] = useState('')
   const [sort, setSort] = useState('featured')
   const [activeId, setActiveId] = useState(null)
@@ -41,6 +56,27 @@ export default function App() {
 
   function openCart() {
     setCartOpen(true)
+  }
+
+  function chooseDepartment(value) {
+    if (value !== department) {
+      const leads = { all: 'ivory-coat', men: 'chambray-shirt', women: 'camel-coat' }
+      const sample =
+        products.find((product) => product.id === leads[value]) ??
+        products.find((product) => value === 'all' || product.department === value)
+      setVeil({ id: Date.now(), label: departmentLabel(value), image: sample?.image ?? '' })
+    }
+    setDepartment(value)
+    setActiveId(null)
+    setPickingId(null)
+    const next = value === 'all' ? '/' : `/?department=${value}`
+    if (window.location.pathname !== '/') {
+      window.location.assign(next)
+      return
+    }
+    if (`${window.location.pathname}${window.location.search}` !== next) {
+      window.history.replaceState(null, '', next)
+    }
   }
 
   function addToBag(product, size) {
@@ -126,7 +162,42 @@ export default function App() {
     return () => document.body.classList.remove('bag-open')
   }, [cartOpen])
 
-  const featured = ['heavyweight-tee', 'camel-coat']
+  useEffect(() => {
+    if (!veil) return undefined
+    const timer = window.setTimeout(() => setVeil(null), 780)
+    return () => window.clearTimeout(timer)
+  }, [veil])
+
+  useEffect(() => {
+    const nodes = [...document.querySelectorAll('.reveal')]
+    if (!nodes.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      nodes.forEach((node) => node.classList.add('is-in'))
+      return undefined
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return
+          entry.target.classList.add('is-in')
+          entry.target.classList.remove('reveal-wait')
+          observer.unobserve(entry.target)
+        })
+      },
+      { threshold: 0, rootMargin: '0px 0px 12% 0px' },
+    )
+    nodes.forEach((node) => {
+      const rect = node.getBoundingClientRect()
+      const inView = rect.bottom > 0 && rect.top < window.innerHeight
+      if (inView) node.classList.add('is-in')
+      else {
+        node.classList.add('reveal-wait')
+        observer.observe(node)
+      }
+    })
+    return () => observer.disconnect()
+  }, [catalogStatus, page, activeId])
+
+  const featured = ['camel-coat', 'heavyweight-tee']
     .map((id) => products.find((product) => product.id === id))
     .filter(Boolean)
 
@@ -137,33 +208,50 @@ export default function App() {
       </a>
       <header className="mast">
         <div className="mast-bar">
-          <button
+          <a
             className="wordmark"
-            type="button"
-            onClick={() => {
+            href="/"
+            onClick={(event) => {
+              if (window.location.pathname !== '/') return
+              event.preventDefault()
               setActiveId(null)
               setDepartment('all')
               setQuery('')
+              setPickingId(null)
+              if (window.location.search) window.history.replaceState(null, '', '/')
             }}
           >
-            Bia's Collection
-          </button>
+            Bia's
+          </a>
           <nav className="departments" aria-label="Departments">
             {departments.map((value) => (
-              <button
-                key={value}
-                type="button"
-                className={department === value && !active ? 'is-active' : ''}
-                aria-pressed={department === value && !active}
-                onClick={() => {
-                  setDepartment(value)
-                  setActiveId(null)
-                  setPickingId(null)
-                }}
-              >
-                {departmentLabel(value)}
-              </button>
+              <div className="dept" key={value}>
+                <button
+                  type="button"
+                  className={page === 'shop' && department === value && !active ? 'is-active' : ''}
+                  aria-pressed={page === 'shop' && department === value && !active}
+                  onClick={() => chooseDepartment(value)}
+                >
+                  {departmentLabel(value)}
+                </button>
+                {value !== 'all' ? (
+                  <div className="mega">
+                    {products
+                      .filter((product) => product.department === value)
+                      .slice(0, 3)
+                      .map((product) => (
+                        <button key={product.id} type="button" onClick={() => chooseDepartment(value)}>
+                          <img src={product.image} alt="" />
+                          <span>{product.name}</span>
+                        </button>
+                      ))}
+                  </div>
+                ) : null}
+              </div>
             ))}
+            <a className={page === 'about' ? 'nav-link is-active' : 'nav-link'} href="/about">
+              About
+            </a>
           </nav>
           <div className="bag-slot">
             <p className="notice" role="status">
@@ -178,16 +266,16 @@ export default function App() {
             >
               <BagIcon />
               Bag
-              <span className="bag-count">{cart.count}</span>
+              <span className="bag-count" key={cart.count}>
+                {cart.count}
+              </span>
             </button>
           </div>
         </div>
       </header>
 
       <main id="catalog">
-        {catalogStatus === 'loading' ? (
-          <p className="empty-rail">Loading clothes…</p>
-        ) : catalogStatus === 'error' ? (
+        {catalogStatus === 'error' && products.length === 0 ? (
           <div className="empty-rail">
             <p>{catalogError}</p>
             <button type="button" onClick={loadProducts}>
@@ -200,39 +288,60 @@ export default function App() {
             onBack={() => setActiveId(null)}
             onAdd={addToBag}
           />
+        ) : page === 'about' ? (
+          <About products={products} />
         ) : (
           <>
-            <section className="opening">
+            <section className="opening reveal">
               <div className="opening-copy">
                 <h1>Clothes for the week you actually wear.</h1>
                 <p>
                   Twelve pieces, split between men and women. Pick a size, then check out with cash
-                  on delivery. The order is saved with the shop.
+                  on delivery.
                 </p>
+                <button
+                  className="explore"
+                  type="button"
+                  onClick={() => document.getElementById('catalog-title')?.scrollIntoView({ behavior: 'smooth' })}
+                >
+                  Explore the clothes
+                </button>
               </div>
-              <div className="feature-row">
-                {featured.map((product) => (
-                  <button
-                    key={product.id}
-                    type="button"
-                    className="feature"
-                    onClick={() => openProduct(product.id)}
-                  >
-                    <img src={product.image} alt="" />
-                    <span className="feature-caption">
-                      <span>
-                        {departmentLabel(product.department)} · {product.name}
+              {catalogStatus === 'loading' ? (
+                <p className="section-loading" role="status">
+                  Loading clothes…
+                </p>
+              ) : featured.length > 0 ? (
+                <div className="feature-pair">
+                  {featured.map((product) => (
+                    <button
+                      key={product.id}
+                      className="feature-tile"
+                      type="button"
+                      onClick={() => openProduct(product.id)}
+                    >
+                      <span className="feature-tile-media">
+                        <img
+                          src={product.image}
+                          alt=""
+                          decoding="async"
+                          fetchPriority="high"
+                        />
                       </span>
-                      <strong>{formatPrice(product.price)}</strong>
-                    </span>
-                  </button>
-                ))}
-              </div>
+                      <span className="feature-tile-copy">
+                        <span className="feature-kicker">{departmentLabel(product.department)}</span>
+                        <strong>{product.name}</strong>
+                        <span className="feature-price">{formatPrice(product.price)}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </section>
 
             <section className="catalog" aria-labelledby="catalog-title">
               <div className="catalog-head">
-                <h2 id="catalog-title">The rail</h2>
+                <h2 id="catalog-title">Category</h2>
                 <div className="tools">
                   <label className="search">
                     <span className="sr-only">Search clothes</span>
@@ -259,7 +368,11 @@ export default function App() {
                 </div>
               </div>
 
-              {visible.length === 0 ? (
+              {catalogStatus === 'loading' ? (
+                <p className="section-loading" role="status">
+                  Loading clothes…
+                </p>
+              ) : visible.length === 0 ? (
                 <div className="empty-rail">
                   <p>No clothes match that search.</p>
                   <button
@@ -278,6 +391,7 @@ export default function App() {
                     <li key={product.id}>
                       <ProductCard
                         product={product}
+                        badge={badgeFor(product)}
                         picking={pickingId === product.id}
                         onOpen={() => openProduct(product.id)}
                         onStartPick={() => setPickingId(product.id)}
@@ -293,11 +407,21 @@ export default function App() {
       </main>
 
       <footer className="colophon">
-        <p>
-          Cash on delivery. No card payment.{' '}
+        <nav aria-label="Shop">
+          <a href="/">Shop</a>
+          <a href="/about">About</a>
+          <a href="/?department=men">Men</a>
+          <a href="/?department=women">Women</a>
           <a href="/admin">Staff</a>
-        </p>
+        </nav>
+        <p>Cash on delivery. No card payment.</p>
       </footer>
+      {veil ? (
+        <div className="dept-veil" key={veil.id} aria-hidden="true">
+          {veil.image ? <img src={veil.image} alt="" /> : null}
+          <p>{veil.label}</p>
+        </div>
+      ) : null}
 
       <CartDrawer
         open={cartOpen}
@@ -324,14 +448,24 @@ export default function App() {
   )
 }
 
-function ProductCard({ product, picking, onOpen, onStartPick, onAdd }) {
+function ProductCard({ product, badge, picking, onOpen, onStartPick, onAdd }) {
   const sizeGroup = useId()
+  const [added, setAdded] = useState(false)
+
+  function chooseSize(size) {
+    onAdd(size)
+    setAdded(true)
+    window.setTimeout(() => setAdded(false), 1400)
+  }
 
   return (
     <article className="piece">
-      <button className="piece-media" type="button" onClick={onOpen} aria-label={`View ${product.name}`}>
-        <img src={product.image} alt="" />
-      </button>
+      <div className="piece-media">
+        <button className="piece-view" type="button" onClick={onOpen} aria-label={`View ${product.name}`}>
+          <img src={product.image} alt="" loading="lazy" decoding="async" />
+        </button>
+        {badge ? <span className="badge">{badge}</span> : null}
+      </div>
       <div className="piece-body">
         <button className="piece-name" type="button" onClick={onOpen}>
           <h3>{product.name}</h3>
@@ -347,18 +481,87 @@ function ProductCard({ product, picking, onOpen, onStartPick, onAdd }) {
             <p id={sizeGroup}>Choose a size</p>
             <div className="size-row">
               {product.sizes.map((size) => (
-                <button key={size} type="button" onClick={() => onAdd(size)}>
+                <button key={size} type="button" onClick={() => chooseSize(size)}>
                   {size}
                 </button>
               ))}
             </div>
           </div>
         ) : (
-          <button className="add" type="button" onClick={onStartPick} disabled={product.stockQuantity < 1}>
-            {product.stockQuantity < 1 ? 'Out of stock' : 'Add to bag'}
+          <button
+            className={`quick-add${added ? ' is-added' : ''}`}
+            type="button"
+            onClick={onStartPick}
+            disabled={product.stockQuantity < 1}
+          >
+            {product.stockQuantity < 1 ? 'Out of stock' : added ? 'Added' : 'Quick add'}
           </button>
         )}
       </div>
+    </article>
+  )
+}
+
+function About({ products }) {
+  const women = products.find((product) => product.id === 'ivory-coat') ?? products.find((product) => product.department === 'women')
+  const men = products.find((product) => product.id === 'chambray-shirt') ?? products.find((product) => product.department === 'men')
+  const promise = products.find((product) => product.id === 'camel-coat') ?? products[0]
+  const gown = products.find((product) => product.id === 'red-gown') ?? women
+
+  return (
+    <article className="about">
+      <header className="about-hero reveal">
+        {promise ? <img src={promise.image} alt={`${promise.name}, ${promise.fabric}`} /> : null}
+        <div>
+          <p className="eyebrow">About</p>
+          <h1>A small shop, worn in the week.</h1>
+        </div>
+      </header>
+      <section className="about-block reveal">
+        <h2>Our story</h2>
+        <p>
+          Bia's keeps twelve pieces on the rail, six for men and six for women. Each one is shown
+          with its cloth, its sizes, and how many are left. The bag stays on this device until you
+          place the order.
+        </p>
+      </section>
+      <section className="about-split reveal">
+        {men ? <img src={men.image} alt={`${men.name}, ${men.fabric}`} /> : null}
+        <div>
+          <h2>Our philosophy</h2>
+          <p>
+            The clothes are for days you actually dress. Names, fabrics, and prices stay next to
+            the photograph, and a size is chosen before anything enters the bag.
+          </p>
+        </div>
+      </section>
+      <section className="about-collections reveal">
+        <h2>Our collections</h2>
+        <div>
+          {men ? (
+            <a href="/?department=men">
+              <img src={men.image} alt="" />
+              <span>Men</span>
+            </a>
+          ) : null}
+          {women ? (
+            <a href="/?department=women">
+              <img src={women.image} alt="" />
+              <span>Women</span>
+            </a>
+          ) : null}
+        </div>
+      </section>
+      <section className="about-split about-promise reveal">
+        <div>
+          <h2>Our promise</h2>
+          <p>
+            Checkout is cash on delivery. No card number is taken. The shop checks the stock, saves
+            the order, and gives you a reference to pay the courier.
+          </p>
+        </div>
+        {gown ? <img src={gown.image} alt={gown === women ? '' : `${gown.name}, ${gown.fabric}`} /> : null}
+      </section>
     </article>
   )
 }
@@ -371,7 +574,7 @@ function ProductDetail({ product, onBack, onAdd }) {
     <article className="detail">
       <button className="back" type="button" onClick={onBack}>
         <ArrowIcon />
-        Back to the rail
+        Back to Page
       </button>
       <div className="detail-layout">
         <img src={product.image} alt={`${product.name}, ${product.fabric}`} />

@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url'
 import express from 'express'
 import { loadEnv, requireEnv } from './env.js'
 import { pool } from './db.js'
+import { clearCatalogCache, readCatalog } from './catalog.js'
 import { placeOrder } from './orders.js'
 import { validateCheckout, validateProductUpdate } from './validate.js'
 import {
@@ -67,12 +68,7 @@ app.get('/api/health', asyncRoute(async (_request, response) => {
 }))
 
 app.get('/api/products', asyncRoute(async (_request, response) => {
-  const result = await pool.query(
-    `SELECT id, name, description, price, image_url, stock_quantity, department, fabric, sizes
-     FROM products
-     ORDER BY sort_order, name`,
-  )
-  response.json({ products: result.rows.map(toProduct) })
+  response.json({ products: await readCatalog() })
 }))
 
 app.get('/api/products/:id', asyncRoute(async (request, response) => {
@@ -205,6 +201,7 @@ app.patch('/api/admin/products/:id', asyncRoute(async (request, response) => {
     response.status(404).json({ error: 'That piece is not in the catalog.' })
     return
   }
+  clearCatalogCache()
   response.json({ product: toProduct(result.rows[0]) })
 }))
 
@@ -268,6 +265,9 @@ if (runningAsCli()) {
   const port = Number(process.env.PORT) || 3001
   const server = app.listen(port, () => {
     console.log(`API listening on http://localhost:${port}`)
+    pool.query('SELECT 1').catch((error) => {
+      console.error('Database warmup failed:', error.message)
+    })
   })
 
   function shutdown() {

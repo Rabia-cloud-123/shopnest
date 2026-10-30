@@ -15,7 +15,7 @@ export const pool = new pg.Pool({
   connectionString,
   ssl: local ? false : { rejectUnauthorized: false },
   max: onVercel ? 1 : 10,
-  idleTimeoutMillis: 10_000,
+  idleTimeoutMillis: onVercel ? 10_000 : 60_000,
   connectionTimeoutMillis: 10_000,
 })
 

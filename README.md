@@ -13,6 +13,7 @@ A clothing shop with a React storefront and an Express API. Products, stock, and
 - The order and the stock update are saved in one database transaction
 - Confirmation shows an order reference
 - Staff page at `/admin` lists orders and requires a password
+- About page at `/about` describes the shop, the two collections, and cash on delivery
 - Customer details are not available from public API routes
 
 ## Technologies
@@ -20,7 +21,7 @@ A clothing shop with a React storefront and an Express API. Products, stock, and
 - React 19 and Vite 8
 - Express 5
 - PostgreSQL on [Neon](https://neon.tech)
-- Fonts: Unbounded and Figtree, self-hosted through Fontsource
+- Fonts: Cormorant Garamond and Inter, self-hosted through Fontsource. The storefront follows the VARENNE luxury fashion layout: cream ground, centered serif wordmark, and black actions.
 
 ## Neon setup
 

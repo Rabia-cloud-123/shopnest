@@ -1,5 +1,6 @@
 import crypto from 'node:crypto'
 import { pool } from './db.js'
+import { clearCatalogCache } from './catalog.js'
 
 const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
@@ -136,6 +137,7 @@ export async function placeOrder(input) {
     }
 
     await client.query('COMMIT')
+    clearCatalogCache()
     return {
       reference,
       status: 'placed',
