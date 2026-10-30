@@ -207,12 +207,23 @@ export default function App() {
 
   function shopNow() {
     chooseDepartment('all')
-    document.getElementById('the-rail')?.scrollIntoView({ behavior: 'smooth' })
+    window.requestAnimationFrame(() => {
+      document.getElementById('the-rail')?.scrollIntoView({ behavior: 'smooth' })
+    })
   }
 
   function shopDepartment(value) {
     chooseDepartment(value)
-    document.getElementById('the-rail')?.scrollIntoView({ behavior: 'smooth' })
+    window.requestAnimationFrame(() => {
+      document.getElementById('the-rail')?.scrollIntoView({ behavior: 'smooth' })
+    })
+  }
+
+  function backToRail() {
+    setActiveId(null)
+    window.requestAnimationFrame(() => {
+      document.getElementById('the-rail')?.scrollIntoView({ behavior: 'smooth' })
+    })
   }
 
   function goHome() {
@@ -228,10 +239,10 @@ export default function App() {
 
   return (
     <>
-      <a className="skip" href={landing ? '#the-rail' : story ? '#about-title' : '#catalog'}>
+      <a className="skip" href={landing ? '#the-rail' : story ? '#about-title' : active ? '#piece-title' : '#catalog'}>
         Skip to clothes
       </a>
-      {landing || story ? null : (
+      {landing || story || active ? null : (
       <header className="mast">
         <div className="mast-bar">
           <a
@@ -310,11 +321,24 @@ export default function App() {
             </button>
           </div>
         ) : active ? (
-          <ProductDetail
-            product={active}
-            onBack={() => setActiveId(null)}
-            onAdd={addToBag}
-          />
+          <div className="nest nest-piece">
+            <HomeNav
+              bagRef={bagButtonRef}
+              cartCount={cart.count}
+              cartOpen={cartOpen}
+              notice={notice}
+              onBrand={goHome}
+              onShop={shopNow}
+              onDepartment={shopDepartment}
+              onToggleCart={() => (cartOpen ? setCartOpen(false) : openCart())}
+            />
+            <ProductDetail
+              product={active}
+              onBack={backToRail}
+              onAdd={addToBag}
+            />
+            <HomeFooter />
+          </div>
         ) : page === 'about' ? (
           <div className="nest nest-story">
             <HomeNav
@@ -417,7 +441,7 @@ export default function App() {
         )}
       </main>
 
-      {landing || story ? null : (
+      {landing || story || active ? null : (
       <footer className="colophon">
         <nav aria-label="Shop">
           <a href="/">Shop</a>
@@ -600,47 +624,48 @@ function ProductDetail({ product, onBack, onAdd }) {
   const [size, setSize] = useState(null)
   const sizeGroup = useId()
 
+  const stockLabel = product.stockQuantity < 1 ? 'Out of stock' : `${product.stockQuantity} in stock`
+
   return (
-    <article className="detail">
-      <button className="back" type="button" onClick={onBack}>
-        <ArrowIcon />
-        Back to Page
-      </button>
-      <div className="detail-layout">
+    <article className="piece-detail">
+      <div className="piece-detail-photo">
         <img src={product.image} alt={`${product.name}, ${product.fabric}`} />
-        <div className="detail-copy">
-          <h1>{product.name}</h1>
-          <p className="detail-price">{formatPrice(product.price)}</p>
-          <p className="detail-text">{product.description}</p>
-          <p className="detail-fabric">
-            {departmentLabel(product.department)} · {product.fabric}
-            {product.stockQuantity < 1 ? ' · Out of stock' : ` · ${product.stockQuantity} in stock`}
-          </p>
-          <div className="sizes" role="group" aria-labelledby={sizeGroup}>
-            <p id={sizeGroup}>Size</p>
-            <div className="size-row">
-              {product.sizes.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={size === value ? 'is-selected' : ''}
-                  aria-pressed={size === value}
-                  onClick={() => setSize(value)}
-                >
-                  {value}
-                </button>
-              ))}
-            </div>
+      </div>
+      <div className="piece-detail-copy">
+        <button className="piece-back" type="button" onClick={onBack}>
+          Back to the rail
+        </button>
+        <h1 id="piece-title">{product.name}</h1>
+        <p className="piece-detail-price">{formatPrice(product.price)}</p>
+        <p className="piece-detail-meta">
+          {departmentLabel(product.department)} · {product.fabric}
+        </p>
+        <p className="piece-detail-text">{product.description}</p>
+        <p className="piece-detail-stock">{stockLabel}</p>
+        <div className="piece-sizes" role="group" aria-labelledby={sizeGroup}>
+          <p id={sizeGroup}>Size</p>
+          <div className="piece-size-row">
+            {product.sizes.map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={size === value ? 'is-selected' : ''}
+                aria-pressed={size === value}
+                onClick={() => setSize(value)}
+              >
+                {value}
+              </button>
+            ))}
           </div>
-          <button
-            className="add add-large"
-            type="button"
-            disabled={!size || product.stockQuantity < 1}
-            onClick={() => size && onAdd(product, size)}
-          >
-            {product.stockQuantity < 1 ? 'Out of stock' : size ? `Add size ${size} to bag` : 'Choose a size'}
-          </button>
         </div>
+        <button
+          className="nest-cta"
+          type="button"
+          disabled={!size || product.stockQuantity < 1}
+          onClick={() => size && onAdd(product, size)}
+        >
+          {product.stockQuantity < 1 ? 'Out of stock' : size ? `Add size ${size} to bag` : 'Choose a size'}
+        </button>
       </div>
     </article>
   )
