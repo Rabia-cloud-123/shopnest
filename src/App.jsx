@@ -2,6 +2,10 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { getProducts, placeOrder } from './api.js'
 import { useCart } from './cart.js'
 import { departmentLabel, formatPrice } from './data/products.js'
+import HomeFooter from './home/HomeFooter.jsx'
+import HomeNav from './home/HomeNav.jsx'
+import HomePage from './home/HomePage.jsx'
+import './home/pages.css'
 
 const departments = ['all', 'men', 'women']
 const bestsellers = new Set(['heavyweight-tee', 'camel-coat'])
@@ -197,15 +201,37 @@ export default function App() {
     return () => observer.disconnect()
   }, [catalogStatus, page, activeId])
 
-  const featured = ['camel-coat', 'heavyweight-tee']
-    .map((id) => products.find((product) => product.id === id))
-    .filter(Boolean)
+  const landing = page === 'shop' && !active
+  const story =
+    page === 'about' && !active && !(catalogStatus === 'error' && products.length === 0)
+
+  function shopNow() {
+    chooseDepartment('all')
+    document.getElementById('the-rail')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  function shopDepartment(value) {
+    chooseDepartment(value)
+    document.getElementById('the-rail')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  function goHome() {
+    setActiveId(null)
+    setDepartment('all')
+    setQuery('')
+    setPickingId(null)
+    if (`${window.location.pathname}${window.location.search}` !== '/') {
+      window.history.replaceState(null, '', '/')
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   return (
     <>
-      <a className="skip" href="#catalog">
+      <a className="skip" href={landing ? '#the-rail' : story ? '#about-title' : '#catalog'}>
         Skip to clothes
       </a>
+      {landing || story ? null : (
       <header className="mast">
         <div className="mast-bar">
           <a
@@ -273,9 +299,10 @@ export default function App() {
           </div>
         </div>
       </header>
+      )}
 
       <main id="catalog">
-        {catalogStatus === 'error' && products.length === 0 ? (
+        {!landing && catalogStatus === 'error' && products.length === 0 ? (
           <div className="empty-rail">
             <p>{catalogError}</p>
             <button type="button" onClick={loadProducts}>
@@ -289,59 +316,36 @@ export default function App() {
             onAdd={addToBag}
           />
         ) : page === 'about' ? (
-          <About products={products} />
+          <div className="nest nest-story">
+            <HomeNav
+              bagRef={bagButtonRef}
+              cartCount={cart.count}
+              cartOpen={cartOpen}
+              notice={notice}
+              onBrand={() => window.location.assign('/')}
+              onShop={shopNow}
+              onDepartment={shopDepartment}
+              onToggleCart={() => (cartOpen ? setCartOpen(false) : openCart())}
+            />
+            <About products={products} />
+            <HomeFooter />
+          </div>
         ) : (
-          <>
-            <section className="opening reveal">
-              <div className="opening-copy">
-                <h1>Clothes for the week you actually wear.</h1>
-                <p>
-                  Twelve pieces, split between men and women. Pick a size, then check out with cash
-                  on delivery.
-                </p>
-                <button
-                  className="explore"
-                  type="button"
-                  onClick={() => document.getElementById('catalog-title')?.scrollIntoView({ behavior: 'smooth' })}
-                >
-                  Explore the clothes
-                </button>
-              </div>
-              {catalogStatus === 'loading' ? (
-                <p className="section-loading" role="status">
-                  Loading clothes…
-                </p>
-              ) : featured.length > 0 ? (
-                <div className="feature-pair">
-                  {featured.map((product) => (
-                    <button
-                      key={product.id}
-                      className="feature-tile"
-                      type="button"
-                      onClick={() => openProduct(product.id)}
-                    >
-                      <span className="feature-tile-media">
-                        <img
-                          src={product.image}
-                          alt=""
-                          decoding="async"
-                          fetchPriority="high"
-                        />
-                      </span>
-                      <span className="feature-tile-copy">
-                        <span className="feature-kicker">{departmentLabel(product.department)}</span>
-                        <strong>{product.name}</strong>
-                        <span className="feature-price">{formatPrice(product.price)}</span>
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </section>
-
-            <section className="catalog" aria-labelledby="catalog-title">
+          <HomePage
+            products={products}
+            notice={notice}
+            bagRef={bagButtonRef}
+            cartCount={cart.count}
+            cartOpen={cartOpen}
+            onBrand={goHome}
+            onShop={shopNow}
+            onDepartment={shopDepartment}
+            onOpen={openProduct}
+            onToggleCart={() => (cartOpen ? setCartOpen(false) : openCart())}
+          >
+            <section className="catalog" id="the-rail" aria-labelledby="catalog-title">
               <div className="catalog-head">
-                <h2 id="catalog-title">Category</h2>
+                <h2 id="catalog-title">{department === 'all' ? 'All clothes' : departmentLabel(department)}</h2>
                 <div className="tools">
                   <label className="search">
                     <span className="sr-only">Search clothes</span>
@@ -368,7 +372,14 @@ export default function App() {
                 </div>
               </div>
 
-              {catalogStatus === 'loading' ? (
+              {catalogStatus === 'error' && products.length === 0 ? (
+                <div className="empty-rail">
+                  <p>{catalogError}</p>
+                  <button type="button" onClick={loadProducts}>
+                    Try again
+                  </button>
+                </div>
+              ) : catalogStatus === 'loading' ? (
                 <p className="section-loading" role="status">
                   Loading clothes…
                 </p>
@@ -402,10 +413,11 @@ export default function App() {
                 </ul>
               )}
             </section>
-          </>
+          </HomePage>
         )}
       </main>
 
+      {landing || story ? null : (
       <footer className="colophon">
         <nav aria-label="Shop">
           <a href="/">Shop</a>
@@ -416,6 +428,7 @@ export default function App() {
         </nav>
         <p>Cash on delivery. No card payment.</p>
       </footer>
+      )}
       {veil ? (
         <div className="dept-veil" key={veil.id} aria-hidden="true">
           {veil.image ? <img src={veil.image} alt="" /> : null}
@@ -509,25 +522,32 @@ function About({ products }) {
   const gown = products.find((product) => product.id === 'red-gown') ?? women
 
   return (
-    <article className="about">
-      <header className="about-hero reveal">
-        {promise ? <img src={promise.image} alt={`${promise.name}, ${promise.fabric}`} /> : null}
-        <div>
-          <p className="eyebrow">About</p>
-          <h1>A small shop, worn in the week.</h1>
+    <article>
+      <section className={promise ? 'nest-hero' : 'nest-hero is-quiet'} aria-labelledby="about-title">
+        <div className="nest-hero-copy">
+          <h1 id="about-title">A small shop, worn in the week.</h1>
         </div>
-      </header>
-      <section className="about-block reveal">
-        <h2>Our story</h2>
+        {promise ? (
+          <div className="nest-hero-photo">
+            <img src={promise.image} alt={`${promise.name}, ${promise.fabric}`} />
+          </div>
+        ) : (
+          <p className="nest-hero-wait" role="status">
+            Loading the rail…
+          </p>
+        )}
+      </section>
+      <section className="nest-story-block" aria-labelledby="story-title">
+        <h2 id="story-title">Our story</h2>
         <p>
           Bia's keeps twelve pieces on the rail, six for men and six for women. Each one is shown
           with its cloth, its sizes, and how many are left. The bag stays on this device until you
           place the order.
         </p>
       </section>
-      <section className="about-split reveal">
-        {men ? <img src={men.image} alt={`${men.name}, ${men.fabric}`} /> : null}
-        <div>
+      <section className="nest-about">
+        {men ? <img src={men.image} alt={`${men.name}, ${men.fabric}`} /> : <div className="nest-about-fallback" />}
+        <div className="nest-about-copy">
           <h2>Our philosophy</h2>
           <p>
             The clothes are for days you actually dress. Names, fabrics, and prices stay next to
@@ -535,32 +555,42 @@ function About({ products }) {
           </p>
         </div>
       </section>
-      <section className="about-collections reveal">
-        <h2>Our collections</h2>
-        <div>
+      <section className="nest-categories" aria-labelledby="collections-title">
+        <div className="nest-section-head">
+          <h2 id="collections-title">Our collections</h2>
+        </div>
+        <div className="nest-cat-grid">
           {men ? (
-            <a href="/?department=men">
+            <a className="nest-cat" href="/?department=men">
               <img src={men.image} alt="" />
-              <span>Men</span>
+              <span className="nest-cat-copy">
+                <strong>Men</strong>
+              </span>
             </a>
           ) : null}
           {women ? (
-            <a href="/?department=women">
+            <a className="nest-cat" href="/?department=women">
               <img src={women.image} alt="" />
-              <span>Women</span>
+              <span className="nest-cat-copy">
+                <strong>Women</strong>
+              </span>
             </a>
           ) : null}
         </div>
       </section>
-      <section className="about-split about-promise reveal">
-        <div>
+      <section className="nest-promo">
+        <div className="nest-promo-copy">
           <h2>Our promise</h2>
           <p>
             Checkout is cash on delivery. No card number is taken. The shop checks the stock, saves
             the order, and gives you a reference to pay the courier.
           </p>
         </div>
-        {gown ? <img src={gown.image} alt={gown === women ? '' : `${gown.name}, ${gown.fabric}`} /> : null}
+        {gown ? (
+          <div className="nest-promo-photo">
+            <img src={gown.image} alt={gown === women ? '' : `${gown.name}, ${gown.fabric}`} />
+          </div>
+        ) : null}
       </section>
     </article>
   )

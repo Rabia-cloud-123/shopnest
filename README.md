@@ -4,6 +4,8 @@ A clothing shop with a React storefront and an Express API. Products, stock, and
 
 ## Features
 
+- Homepage, about page, and staff page share the ShopNest layout
+- Homepage landing page for ShopNest, with the searchable rail still loaded from the API
 - Twelve sample products, six for men and six for women, loaded from the API
 - Filter, search, and sort the catalog
 - Product page with a description, size choice, and stock
@@ -108,6 +110,7 @@ server/orders.js           Checkout transaction
 server/migrations/         SQL migrations
 server/seed-data.js        Sample catalog
 src/App.jsx                Shop, bag, and checkout
+src/home/                 Homepage landing sections
 src/Admin.jsx              Staff order list
 src/cart.js                Bag draft saved in this browser until checkout
 public/products            Product photographs
