@@ -1,3 +1,5 @@
+import { followImageLight } from './imageLight.js'
+
 export default function CategorySection({ men, women, menCount, womenCount, onDepartment }) {
   return (
     <section className="nest-categories" aria-labelledby="nest-categories-title">
@@ -26,8 +28,9 @@ export default function CategorySection({ men, women, menCount, womenCount, onDe
 
 function CategoryPanel({ label, count, image, imageAlt, onSelect }) {
   return (
-    <button className="nest-cat" type="button" onClick={onSelect}>
+    <button className="nest-cat" type="button" onClick={onSelect} onPointerMove={followImageLight}>
       {image ? <img src={image} alt={imageAlt} /> : null}
+      <span className="image-light" aria-hidden="true" />
       <span className="nest-cat-copy">
         <strong>{label}</strong>
         {count > 0 ? <span>{count === 1 ? '1 piece' : `${count} pieces`}</span> : null}

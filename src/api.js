@@ -14,7 +14,11 @@ export function getProducts() {
     .then(async (response) => {
       const data = await readJson(response)
       if (!response.ok) throw new Error(data.error || 'The shop could not load clothes.')
-      return data.products
+      return {
+        products: data.products ?? [],
+        arrivals: data.arrivals ?? [],
+        bestsellers: data.bestsellers ?? [],
+      }
     })
     .finally(() => {
       productsRequest = null

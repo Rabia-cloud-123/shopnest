@@ -1,4 +1,5 @@
 import { departmentLabel, formatPrice } from '../data/products.js'
+import { followImageLight } from './imageLight.js'
 
 export default function BestSellerSection({ products, title, onOpen }) {
   const lead = products[0]
@@ -7,8 +8,15 @@ export default function BestSellerSection({ products, title, onOpen }) {
   return (
     <section className="nest-best" aria-labelledby="nest-best-title">
       {lead ? (
-        <button className="nest-best-photo" type="button" onClick={() => onOpen(lead.id)} aria-label={`View ${lead.name}`}>
+        <button
+          className="nest-best-photo"
+          type="button"
+          onClick={() => onOpen(lead.id)}
+          onPointerMove={followImageLight}
+          aria-label={`View ${lead.name}`}
+        >
           <img src={lead.image} alt="" />
+          <span className="image-light" aria-hidden="true" />
         </button>
       ) : (
         <p className="nest-empty">Bestsellers will show here once the rail loads.</p>

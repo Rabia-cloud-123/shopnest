@@ -7,11 +7,13 @@ import HomeHero from './HomeHero.jsx'
 import HomeNav from './HomeNav.jsx'
 import NewsletterBand from './NewsletterBand.jsx'
 import PromoSection from './PromoSection.jsx'
-import { arrivalIds, bestsellerIds, byIds, findProduct } from './picks.js'
+import { findProduct } from './picks.js'
 import './home.css'
 
 export default function HomePage({
   products,
+  arrivals,
+  bestsellers,
   notice,
   bagRef,
   cartCount,
@@ -23,10 +25,6 @@ export default function HomePage({
   onToggleCart,
   children,
 }) {
-  const arrivals = byIds(products, arrivalIds)
-  const bestsellers = byIds(products, bestsellerIds)
-  const arrivalList = arrivals.length ? arrivals : products.slice(0, 2)
-  const bestList = bestsellers.length ? bestsellers : products.slice(0, 2)
   const hero =
     findProduct(products, 'ivory-coat') ??
     findProduct(products, 'camel-coat') ??
@@ -58,16 +56,8 @@ export default function HomePage({
         womenCount={products.filter((product) => product.department === 'women').length}
         onDepartment={onDepartment}
       />
-      <ArrivalSection
-        title={!products.length || arrivals.length ? 'New arrivals' : 'From the rail'}
-        products={arrivalList}
-        onOpen={onOpen}
-      />
-      <BestSellerSection
-        title={!products.length || bestsellers.length ? 'Best sellers' : 'From the rail'}
-        products={bestList}
-        onOpen={onOpen}
-      />
+      <ArrivalSection title="New arrivals" products={arrivals} onOpen={onOpen} />
+      <BestSellerSection title="Best sellers" products={bestsellers} onOpen={onOpen} />
       {children}
       <PromoSection coats={coats} evening={evening} onOpen={onOpen} />
       <AboutBand

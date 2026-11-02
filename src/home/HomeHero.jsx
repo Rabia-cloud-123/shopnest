@@ -1,6 +1,9 @@
 export default function HomeHero({ product, onShop, onOpen }) {
   return (
-    <section className={product ? 'nest-hero' : 'nest-hero is-quiet'} aria-labelledby="nest-hero-title">
+    <section
+      className={product ? 'nest-hero nest-hero-home' : 'nest-hero nest-hero-home is-quiet'}
+      aria-labelledby="nest-hero-title"
+    >
       <div className="nest-hero-copy">
         <h1 id="nest-hero-title">Clothes for the week you actually wear.</h1>
         <p>A short rail for men and women. Choose a size, then pay the courier in cash.</p>

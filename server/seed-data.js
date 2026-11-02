@@ -155,4 +155,43 @@ export const sampleProducts = [
     stockQuantity: 5,
     sortOrder: 12,
   },
+  {
+    id: 'linen-overshirt',
+    name: 'Linen overshirt',
+    department: 'men',
+    price: 96,
+    fabric: 'Linen',
+    description:
+      'An unlined overshirt in stone linen, with a camp collar and a single chest pocket. Wear it open over the tee.',
+    sizes: ['S', 'M', 'L', 'XL'],
+    imageUrl: '/products/linen-overshirt.jpg',
+    stockQuantity: 9,
+    sortOrder: 13,
+  },
+  {
+    id: 'relaxed-polo',
+    name: 'Relaxed polo',
+    department: 'men',
+    price: 86,
+    fabric: 'Cotton pique',
+    description:
+      'An oversized polo in oatmeal pique, with a dropped shoulder and a short placket. The body sits loose, in the clean cut worn in Seoul.',
+    sizes: ['S', 'M', 'L', 'XL'],
+    imageUrl: '/products/relaxed-polo.jpg',
+    stockQuantity: 12,
+    sortOrder: 14,
+  },
+  {
+    id: 'blossom-midi',
+    name: 'Blossom midi',
+    department: 'women',
+    price: 176,
+    fabric: 'Chiffon',
+    description:
+      'A floral midi in ivory chiffon, with a soft V neck, flutter sleeves, and a skirt that falls below the knee. Light, and cut to move.',
+    sizes: ['XS', 'S', 'M', 'L'],
+    imageUrl: '/products/blossom-midi.jpg',
+    stockQuantity: 8,
+    sortOrder: 15,
+  },
 ]

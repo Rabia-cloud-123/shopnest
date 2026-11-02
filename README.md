@@ -6,7 +6,9 @@ A clothing shop with a React storefront and an Express API. Products, stock, and
 
 - Homepage, about page, and staff page share the ShopNest layout
 - Homepage landing page for ShopNest, with the searchable rail still loaded from the API
-- Twelve sample products, six for men and six for women, loaded from the API
+- Fifteen sample products, eight for men and seven for women, loaded from the API
+- New Arrivals are the two newest products by `created_at`
+- Best Sellers are the two products with the most units sold on placed orders
 - Filter, search, and sort the catalog
 - Product page with a description, size choice, and stock
 - Bag with quantity changes and removal
@@ -69,7 +71,7 @@ npm run dev
 
 Open http://localhost:5173. The API runs on port 3001, and Vite proxies `/api` to it.
 
-`npm run seed` inserts sample products only when they are missing. It does not reset stock after orders.
+`npm run seed` inserts sample products only when they are missing. It also removes the retired sample ids `black-slip` and `wool-polo` when no order refers to them. It does not reset stock on products that remain.
 
 To serve the built site and the API from one process:
 
@@ -106,6 +108,7 @@ See `.env.example`. No real credentials belong in Git.
 api/index.js               Vercel entry for the Express app
 vercel.json                Sends /api to that function and other routes to the storefront
 server/index.js            API, staff routes, and local production static files
+server/catalog.js          Catalog, new arrivals, and best sellers
 server/orders.js           Checkout transaction
 server/migrations/         SQL migrations
 server/seed-data.js        Sample catalog

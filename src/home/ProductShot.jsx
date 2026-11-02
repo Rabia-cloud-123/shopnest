@@ -1,10 +1,12 @@
 import { departmentLabel, formatPrice } from '../data/products.js'
+import { followImageLight } from './imageLight.js'
 
 export default function ProductShot({ product, onOpen }) {
   return (
     <button className="shot" type="button" onClick={() => onOpen(product.id)}>
-      <span className="shot-media">
+      <span className="shot-media" onPointerMove={followImageLight}>
         <img src={product.image} alt="" />
+        <span className="image-light" aria-hidden="true" />
       </span>
       <span className="shot-copy">
         <strong>{product.name}</strong>

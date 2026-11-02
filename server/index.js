@@ -3,7 +3,7 @@ import { pathToFileURL } from 'node:url'
 import express from 'express'
 import { loadEnv, requireEnv } from './env.js'
 import { pool } from './db.js'
-import { clearCatalogCache, readCatalog } from './catalog.js'
+import { clearCatalogCache, readArrivals, readBestsellers, readCatalog } from './catalog.js'
 import { placeOrder } from './orders.js'
 import { validateCheckout, validateProductUpdate } from './validate.js'
 import {
@@ -68,7 +68,20 @@ app.get('/api/health', asyncRoute(async (_request, response) => {
 }))
 
 app.get('/api/products', asyncRoute(async (_request, response) => {
-  response.json({ products: await readCatalog() })
+  const [products, arrivals, bestsellers] = await Promise.all([
+    readCatalog(),
+    readArrivals(),
+    readBestsellers(),
+  ])
+  response.json({ products, arrivals, bestsellers })
+}))
+
+app.get('/api/products/arrivals', asyncRoute(async (_request, response) => {
+  response.json({ products: await readArrivals() })
+}))
+
+app.get('/api/products/bestsellers', asyncRoute(async (_request, response) => {
+  response.json({ products: await readBestsellers() })
 }))
 
 app.get('/api/products/:id', asyncRoute(async (request, response) => {

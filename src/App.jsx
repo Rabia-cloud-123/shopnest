@@ -4,17 +4,27 @@ import { useCart } from './cart.js'
 import { departmentLabel, formatPrice } from './data/products.js'
 import HomeFooter from './home/HomeFooter.jsx'
 import HomeNav from './home/HomeNav.jsx'
+import { followImageLight } from './home/imageLight.js'
 import HomePage from './home/HomePage.jsx'
 import './home/pages.css'
 
 const departments = ['all', 'men', 'women']
-const bestsellers = new Set(['heavyweight-tee', 'camel-coat'])
-const arrivals = new Set(['ivory-coat', 'embroidered-shirt'])
 
-function badgeFor(product) {
-  if (bestsellers.has(product.id)) return 'Bestseller'
-  if (arrivals.has(product.id)) return 'New arrival'
+function badgeFor(product, bestsellerIds, arrivalIds) {
+  if (bestsellerIds.has(product.id)) return 'Bestseller'
+  if (arrivalIds.has(product.id)) return 'New arrival'
   return ''
+}
+
+function withHighlights(products, arrivals, bestsellers) {
+  const seen = new Set(products.map((product) => product.id))
+  const extras = []
+  for (const product of [...arrivals, ...bestsellers]) {
+    if (!product || seen.has(product.id)) continue
+    seen.add(product.id)
+    extras.push(product)
+  }
+  return extras.length ? [...products, ...extras] : products
 }
 
 function readDepartment() {
@@ -25,6 +35,8 @@ function readDepartment() {
 export default function App() {
   const cart = useCart()
   const [products, setProducts] = useState([])
+  const [arrivals, setArrivals] = useState([])
+  const [bestsellers, setBestsellers] = useState([])
   const [catalogStatus, setCatalogStatus] = useState('loading')
   const [catalogError, setCatalogError] = useState('')
   const [department, setDepartment] = useState(readDepartment)
@@ -116,8 +128,7 @@ export default function App() {
       setCatalogError('')
     }
     try {
-      setProducts(await getProducts())
-      setCatalogStatus('ready')
+      applyCatalog(await getProducts())
     } catch (error) {
       if (!quiet) {
         setCatalogError(error.message)
@@ -176,8 +187,7 @@ export default function App() {
     getProducts()
       .then((next) => {
         if (ignore) return
-        setProducts(next)
-        setCatalogStatus('ready')
+        applyCatalog(next)
       })
       .catch((error) => {
         if (ignore) return
@@ -188,6 +198,18 @@ export default function App() {
       ignore = true
     }
   }, [])
+
+  function applyCatalog(data) {
+    const nextArrivals = data.arrivals ?? []
+    const nextBestsellers = data.bestsellers ?? []
+    setArrivals(nextArrivals)
+    setBestsellers(nextBestsellers)
+    setProducts(withHighlights(data.products ?? [], nextArrivals, nextBestsellers))
+    setCatalogStatus('ready')
+  }
+
+  const bestsellerIds = useMemo(() => new Set(bestsellers.map((product) => product.id)), [bestsellers])
+  const arrivalIds = useMemo(() => new Set(arrivals.map((product) => product.id)), [arrivals])
 
   function openProduct(id) {
     setActiveId(id)
@@ -402,6 +424,8 @@ export default function App() {
         ) : (
           <HomePage
             products={products}
+            arrivals={arrivals}
+            bestsellers={bestsellers}
             notice={notice}
             bagRef={bagButtonRef}
             cartCount={cart.count}
@@ -471,7 +495,7 @@ export default function App() {
                     <li key={product.id}>
                       <ProductCard
                         product={product}
-                        badge={badgeFor(product)}
+                        badge={badgeFor(product, bestsellerIds, arrivalIds)}
                         picking={pickingId === product.id}
                         onOpen={() => openProduct(product.id)}
                         onStartPick={() => setPickingId(product.id)}
@@ -543,8 +567,15 @@ function ProductCard({ product, badge, picking, onOpen, onStartPick, onAdd }) {
   return (
     <article className="piece">
       <div className="piece-media">
-        <button className="piece-view" type="button" onClick={onOpen} aria-label={`View ${product.name}`}>
+        <button
+          className="piece-view"
+          type="button"
+          onClick={onOpen}
+          onPointerMove={followImageLight}
+          aria-label={`View ${product.name}`}
+        >
           <img src={product.image} alt="" loading="lazy" decoding="async" />
+          <span className="image-light" aria-hidden="true" />
         </button>
         {badge ? <span className="badge">{badge}</span> : null}
       </div>
