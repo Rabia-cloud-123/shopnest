@@ -1,56 +1,82 @@
 .piece-detail {
   display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  min-height: calc(100svh - 4.75rem);
-  background: var(--nest-paper);
+  grid-template-columns: auto minmax(280px, 36rem);
+  justify-content: start;
+  align-items: start;
+  column-gap: 48px;
+  width: 100%;
+  margin: 0;
+  padding: 28px 32px 48px;
 }
 
 .piece-detail-photo {
-  min-height: calc(100svh - 4.75rem);
-  background: #e7d5cc;
-  overflow: hidden;
+  display: flex;
+  justify-content: flex-start;
+  min-width: 0;
+  background: transparent;
 }
 
 .piece-detail-photo img {
-  width: 100%;
-  height: 100%;
-  min-height: calc(100svh - 4.75rem);
+  width: min(520px, calc((100svh - 10rem) * 0.8));
+  aspect-ratio: 4 / 5;
+  height: auto;
+  max-height: calc(100svh - 10rem);
   object-fit: cover;
-  object-position: center 20%;
+  object-position: center 18%;
+  background: #e7d5cc;
 }
 
 .piece-detail-copy {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: flex-start;
-  gap: 16px;
-  padding: 48px 56px;
+  gap: 12px;
+  min-width: 0;
+  padding: 0;
 }
 
 .piece-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
   border: 0;
-  border-bottom: 1px solid var(--nest-wine);
+  border-bottom: 1px solid transparent;
   background: transparent;
-  padding: 0 0 4px;
+  padding: 4px 0;
   color: var(--nest-wine);
-  font-size: 0.78rem;
+  font-size: 1rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+
+.piece-back svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  transition: transform 180ms ease;
 }
 
 .piece-back:hover {
   color: var(--nest-wine-mid);
+  border-bottom-color: currentColor;
+}
+
+.piece-back:hover svg {
+  transform: translateX(-3px);
 }
 
 .piece-detail-copy h1 {
-  max-width: 14ch;
+  max-width: 16ch;
+  margin-top: 0;
   font-family: var(--display);
-  font-size: clamp(2.8rem, 4vw, 4.4rem);
+  font-size: clamp(2.2rem, 3vw, 3.4rem);
   font-weight: 500;
   letter-spacing: -0.03em;
   line-height: 0.95;
+  text-wrap: balance;
 }
 
 .piece-detail-price {
@@ -77,6 +103,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  margin-top: 8px;
 }
 
 .piece-sizes p {
@@ -111,8 +138,11 @@
 }
 
 .nest-piece .nest-cta {
+  align-self: stretch;
+  margin-top: 8px;
   background: var(--nest-wine);
   color: var(--nest-ink);
+  text-align: center;
 }
 
 .nest-piece .nest-cta:hover {
@@ -130,21 +160,36 @@
   outline-color: var(--nest-wine);
 }
 
-@media (max-width: 980px) {
+@media (max-width: 860px) {
   .piece-detail {
     grid-template-columns: 1fr;
-    min-height: 0;
+    row-gap: 24px;
+    width: 100%;
+    padding: 20px 20px 40px;
   }
 
-  .piece-detail-photo,
+  .piece-detail-photo {
+    justify-content: flex-start;
+  }
+
   .piece-detail-photo img {
-    min-height: 0;
-    height: 68vh;
+    width: min(100%, calc(62vh * 0.8));
+    max-height: 62vh;
   }
+}
 
-  .piece-detail-copy {
-    padding: 32px 20px 48px;
-  }
+.nest-story .nest-hero {
+  grid-template-columns: minmax(280px, 0.72fr) minmax(0, 1.28fr);
+  align-items: stretch;
+  min-height: calc(100svh - 4.75rem);
+  height: auto;
+  max-height: none;
+  overflow: visible;
+}
+
+.nest-story .nest-hero-copy {
+  justify-content: center;
+  padding: 56px 48px;
 }
 
 .nest-story .nest-hero h1 {
@@ -152,33 +197,33 @@
   font-size: clamp(2.6rem, 4vw, 4rem);
 }
 
+.nest-story .nest-hero-photo {
+  height: auto;
+  min-height: 0;
+}
+
 .nest-story .nest-hero-photo img {
-  object-position: center 42%;
+  width: 100%;
+  height: max(640px, calc(100svh - 4.75rem));
+  min-height: 640px;
+  object-fit: cover;
+  object-position: center 22%;
 }
 
-.nest-story-block {
-  max-width: 42rem;
-  margin: 0 auto;
-  padding: 72px 32px 16px;
+.nest-story .nest-about-flip {
+  grid-template-columns: 0.95fr 1.05fr;
+  align-items: center;
 }
 
-.nest-story-block h2,
+.nest-story .nest-about-flip img {
+  object-position: 70% 28%;
+}
+
 .nest-story .nest-promo-copy h2 {
   font-family: var(--display);
   font-weight: 500;
   letter-spacing: -0.03em;
   line-height: 0.95;
-}
-
-.nest-story-block h2 {
-  font-size: clamp(2.4rem, 4vw, 3.8rem);
-}
-
-.nest-story-block p {
-  max-width: 65ch;
-  margin-top: 24px;
-  color: var(--nest-muted);
-  font-size: 1.05rem;
 }
 
 .nest-story .nest-promo-copy h2 {
@@ -305,8 +350,23 @@
   background: #f3ebe3;
 }
 
+@media (max-width: 980px) {
+  .nest-story .nest-hero,
+  .nest-story .nest-about-flip {
+    grid-template-columns: 1fr;
+  }
+
+  .nest-story .nest-hero-copy {
+    padding: 40px 20px 28px;
+  }
+
+  .nest-story .nest-hero-photo img {
+    height: 72vh;
+    min-height: 420px;
+  }
+}
+
 @media (max-width: 800px) {
-  .nest-story-block,
   .staff-main {
     padding-left: 20px;
     padding-right: 20px;
@@ -319,7 +379,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .staff-table tbody tr {
+  .staff-table tbody tr,
+  .piece-back svg {
     transition: none;
   }
 }

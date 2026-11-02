@@ -127,6 +127,51 @@ export default function App() {
   }
 
   useEffect(() => {
+    if (page !== 'shop' || catalogStatus !== 'ready' || readDepartment() === 'all') return undefined
+    const rail = document.getElementById('the-rail')
+    if (!rail) return undefined
+
+    // Landing sections sit above the catalog. A visit from About (or a direct
+    // department link) must wait until those images have size, or the scroll
+    // lands on the homepage instead of the collection.
+    let follow = true
+    let suppressUntil = 0
+    const align = () => {
+      if (!follow) return
+      suppressUntil = performance.now() + 100
+      rail.scrollIntoView({ behavior: 'auto', block: 'start' })
+    }
+
+    align()
+
+    const images = [...document.querySelectorAll('.nest img')].filter((img) => !img.complete)
+    images.forEach((img) => {
+      img.addEventListener('load', align, { once: true })
+      img.addEventListener('error', align, { once: true })
+    })
+
+    function onScroll() {
+      if (performance.now() < suppressUntil) return
+      follow = false
+    }
+
+    window.addEventListener('scroll', onScroll, { passive: true })
+    const stop = window.setTimeout(() => {
+      follow = false
+    }, 1600)
+
+    return () => {
+      follow = false
+      window.clearTimeout(stop)
+      window.removeEventListener('scroll', onScroll)
+      images.forEach((img) => {
+        img.removeEventListener('load', align)
+        img.removeEventListener('error', align)
+      })
+    }
+  }, [page, catalogStatus])
+
+  useEffect(() => {
     let ignore = false
     getProducts()
       .then((next) => {
@@ -542,32 +587,37 @@ function ProductCard({ product, badge, picking, onOpen, onStartPick, onAdd }) {
 function About({ products }) {
   const women = products.find((product) => product.id === 'ivory-coat') ?? products.find((product) => product.department === 'women')
   const men = products.find((product) => product.id === 'chambray-shirt') ?? products.find((product) => product.department === 'men')
-  const promise = products.find((product) => product.id === 'camel-coat') ?? products[0]
   const gown = products.find((product) => product.id === 'red-gown') ?? women
 
   return (
     <article>
-      <section className={promise ? 'nest-hero' : 'nest-hero is-quiet'} aria-labelledby="about-title">
+      <section className="nest-hero" aria-labelledby="about-title">
         <div className="nest-hero-copy">
           <h1 id="about-title">A small shop, worn in the week.</h1>
         </div>
-        {promise ? (
-          <div className="nest-hero-photo">
-            <img src={promise.image} alt={`${promise.name}, ${promise.fabric}`} />
-          </div>
-        ) : (
-          <p className="nest-hero-wait" role="status">
-            Loading the rail…
-          </p>
-        )}
+        <div className="nest-hero-photo">
+          <img
+            src="/about/editorial.jpg"
+            alt="A woman in a burgundy coat and sunglasses, photographed in daylight."
+          />
+        </div>
       </section>
-      <section className="nest-story-block" aria-labelledby="story-title">
-        <h2 id="story-title">Our story</h2>
-        <p>
-          Bia's keeps twelve pieces on the rail, six for men and six for women. Each one is shown
-          with its cloth, its sizes, and how many are left. The bag stays on this device until you
-          place the order.
-        </p>
+      <section className="nest-about nest-about-flip" aria-labelledby="story-title">
+        <div className="nest-about-copy">
+          <h2 id="story-title">Our story</h2>
+          <p>
+            Good style doesn't need to be complicated. It just needs to feel right. ShopNest started
+            with a simple idea: finding everyday clothing should feel easy, personal, and inspiring. We
+            believe the best wardrobe isn't about having more, but about choosing pieces you'll reach
+            for again and again. From timeless essentials to everyday favourites, we bring together
+            clothing that feels comfortable, looks effortless, and fits naturally into your life. We're
+            here to make getting dressed a little simpler, one good piece at a time.
+          </p>
+        </div>
+        <img
+          src="/about/mannequin.jpg"
+          alt="A boutique mannequin dressed in a knit vest and polka-dot shorts, beside a rack of clothes."
+        />
       </section>
       <section className="nest-about">
         {men ? <img src={men.image} alt={`${men.name}, ${men.fabric}`} /> : <div className="nest-about-fallback" />}
@@ -633,7 +683,8 @@ function ProductDetail({ product, onBack, onAdd }) {
       </div>
       <div className="piece-detail-copy">
         <button className="piece-back" type="button" onClick={onBack}>
-          Back to the rail
+          <ArrowIcon />
+          Back to the Rail
         </button>
         <h1 id="piece-title">{product.name}</h1>
         <p className="piece-detail-price">{formatPrice(product.price)}</p>
