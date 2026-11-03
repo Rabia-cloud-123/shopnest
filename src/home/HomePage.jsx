@@ -4,6 +4,7 @@ import BestSellerSection from './BestSellerSection.jsx'
 import CategorySection from './CategorySection.jsx'
 import HomeFooter from './HomeFooter.jsx'
 import HomeHero from './HomeHero.jsx'
+import HomeMarquee from './HomeMarquee.jsx'
 import HomeNav from './HomeNav.jsx'
 import NewsletterBand from './NewsletterBand.jsx'
 import PromoSection from './PromoSection.jsx'
@@ -55,6 +56,7 @@ export default function HomePage({
         onToggleCart={onToggleCart}
       />
       <HomeHero slides={heroSlides} onShop={onShop} onOpen={onOpen} />
+      <HomeMarquee />
       <CategorySection
         men={menLead}
         women={womenLead}
