@@ -35,16 +35,16 @@ export default function NewsletterBand() {
 
   return (
     <section className="nest-news" aria-labelledby="nest-news-title">
-      <div>
+      <div className="rise">
         <h2 id="nest-news-title">Newsletter</h2>
         <p>Leave an address on this device. ShopNest does not send mail from the shop.</p>
       </div>
       {saved ? (
-        <p className="nest-news-saved" role="status">
+        <p className="nest-news-saved rise" data-lag="1" role="status">
           {saved} is noted in this browser.
         </p>
       ) : (
-        <form className="nest-news-form" onSubmit={submit} noValidate>
+        <form className="nest-news-form rise" data-lag="1" onSubmit={submit} noValidate>
           <label htmlFor="nest-email">Email</label>
           <div className="nest-news-row">
             <input

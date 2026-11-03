@@ -71,7 +71,7 @@ export default function HomePage({
         imageAlt={aboutImage ? `${aboutImage.name}, ${aboutImage.fabric}` : ''}
       />
       <NewsletterBand />
-      <HomeFooter />
+      <HomeFooter rise />
     </div>
   )
 }

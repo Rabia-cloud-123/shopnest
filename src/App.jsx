@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { getProducts, placeOrder } from './api.js'
 import { useCart } from './cart.js'
 import { departmentLabel, formatPrice } from './data/products.js'
@@ -269,6 +269,54 @@ export default function App() {
     return () => observer.disconnect()
   }, [catalogStatus, page, activeId])
 
+  useLayoutEffect(() => {
+    const nodes = [...document.querySelectorAll('.rise')]
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      nodes.forEach((node) => node.classList.remove('rise-wait'))
+      return undefined
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return
+          entry.target.classList.add('is-in')
+          entry.target.classList.remove('rise-wait')
+          observer.unobserve(entry.target)
+        })
+      },
+      { threshold: 0, rootMargin: '0px 0px -12% 0px' },
+    )
+
+    const waiting = []
+    nodes.forEach((node) => {
+      if (node.classList.contains('is-in')) return
+      node.style.transition = 'none'
+      node.classList.add('rise-wait')
+    })
+    document.body.offsetHeight
+    nodes.forEach((node) => {
+      if (node.classList.contains('is-in')) return
+      node.style.transition = ''
+      const rect = node.getBoundingClientRect()
+      const entered = rect.bottom > 0 && rect.top <= window.innerHeight * 0.88
+      if (entered) waiting.push(node)
+      else observer.observe(node)
+    })
+
+    const frame = window.requestAnimationFrame(() => {
+      waiting.forEach((node) => {
+        node.classList.add('is-in')
+        node.classList.remove('rise-wait')
+      })
+    })
+
+    return () => {
+      observer.disconnect()
+      window.cancelAnimationFrame(frame)
+    }
+  }, [catalogStatus, page, activeId, products.length, arrivals.length, bestsellers.length])
+
   const landing = page === 'shop' && !active
   const story =
     page === 'about' && !active && !(catalogStatus === 'error' && products.length === 0)
@@ -437,7 +485,7 @@ export default function App() {
             onToggleCart={() => (cartOpen ? setCartOpen(false) : openCart())}
           >
             <section className="catalog" id="the-rail" aria-labelledby="catalog-title">
-              <div className="catalog-head">
+              <div className="catalog-head rise">
                 <h2 id="catalog-title">{department === 'all' ? 'All clothes' : departmentLabel(department)}</h2>
                 <div className="tools">
                   <label className="search">
@@ -466,18 +514,18 @@ export default function App() {
               </div>
 
               {catalogStatus === 'error' && products.length === 0 ? (
-                <div className="empty-rail">
+                <div className="empty-rail rise">
                   <p>{catalogError}</p>
                   <button type="button" onClick={loadProducts}>
                     Try again
                   </button>
                 </div>
               ) : catalogStatus === 'loading' ? (
-                <p className="section-loading" role="status">
+                <p className="section-loading rise" role="status">
                   Loading clothes…
                 </p>
               ) : visible.length === 0 ? (
-                <div className="empty-rail">
+                <div className="empty-rail rise">
                   <p>No clothes match that search.</p>
                   <button
                     type="button"
@@ -491,8 +539,8 @@ export default function App() {
                 </div>
               ) : (
                 <ul className="rail">
-                  {visible.map((product) => (
-                    <li key={product.id}>
+                  {visible.map((product, index) => (
+                    <li key={product.id} className="rise" data-lag={index % 3 || undefined}>
                       <ProductCard
                         product={product}
                         badge={badgeFor(product, bestsellerIds, arrivalIds)}
@@ -642,7 +690,7 @@ function About({ products }) {
     <article>
       <HomeHero title="A small shop, worn in the week." titleId="about-title" slides={aboutSlides} />
       <section className="nest-about nest-about-flip" aria-labelledby="story-title">
-        <div className="nest-about-copy">
+        <div className="nest-about-copy rise">
           <h2 id="story-title">Our story</h2>
           <p>
             Good style doesn't need to be complicated. It just needs to feel right. ShopNest started
@@ -654,13 +702,15 @@ function About({ products }) {
           </p>
         </div>
         <img
+          className="rise"
+          data-lag="1"
           src="/about/mannequin.jpg"
           alt="A boutique mannequin dressed in a knit vest and polka-dot shorts, beside a rack of clothes."
         />
       </section>
       <section className="nest-about">
-        {men ? <img src={men.image} alt={`${men.name}, ${men.fabric}`} /> : <div className="nest-about-fallback" />}
-        <div className="nest-about-copy">
+        {men ? <img className="rise" src={men.image} alt={`${men.name}, ${men.fabric}`} /> : <div className="nest-about-fallback rise" />}
+        <div className="nest-about-copy rise" data-lag="1">
           <h2>Our philosophy</h2>
           <p>
             The clothes are for days you actually dress. Names, fabrics, and prices stay next to
@@ -669,12 +719,12 @@ function About({ products }) {
         </div>
       </section>
       <section className="nest-categories" aria-labelledby="collections-title">
-        <div className="nest-section-head">
+        <div className="nest-section-head rise">
           <h2 id="collections-title">Our collections</h2>
         </div>
         <div className="nest-cat-grid">
           {men ? (
-            <a className="nest-cat" href="/?department=men">
+            <a className="nest-cat rise" href="/?department=men">
               <img src={men.image} alt="" />
               <span className="nest-cat-copy">
                 <strong>Men</strong>
@@ -682,7 +732,7 @@ function About({ products }) {
             </a>
           ) : null}
           {women ? (
-            <a className="nest-cat" href="/?department=women">
+            <a className="nest-cat rise" data-lag="1" href="/?department=women">
               <img src={women.image} alt="" />
               <span className="nest-cat-copy">
                 <strong>Women</strong>
@@ -692,7 +742,7 @@ function About({ products }) {
         </div>
       </section>
       <section className="nest-promo">
-        <div className="nest-promo-copy">
+        <div className="nest-promo-copy rise">
           <h2>Our promise</h2>
           <p>
             Checkout is cash on delivery. No card number is taken. The shop checks the stock, saves
@@ -700,12 +750,12 @@ function About({ products }) {
           </p>
         </div>
         {gown ? (
-          <div className="nest-promo-photo">
+          <div className="nest-promo-photo rise" data-lag="1">
             <img src={gown.image} alt={gown === women ? '' : `${gown.name}, ${gown.fabric}`} />
           </div>
         ) : null}
       </section>
-      <HomeFooter />
+      <HomeFooter rise />
     </article>
   )
 }

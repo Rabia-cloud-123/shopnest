@@ -9,7 +9,7 @@ export default function BestSellerSection({ products, title, onOpen }) {
     <section className="nest-best" aria-labelledby="nest-best-title">
       {lead ? (
         <button
-          className="nest-best-photo"
+          className="nest-best-photo rise"
           type="button"
           onClick={() => onOpen(lead.id)}
           onPointerMove={followImageLight}
@@ -19,9 +19,9 @@ export default function BestSellerSection({ products, title, onOpen }) {
           <span className="image-light" aria-hidden="true" />
         </button>
       ) : (
-        <p className="nest-empty">Bestsellers will show here once the rail loads.</p>
+        <p className="nest-empty rise">Bestsellers will show here once the rail loads.</p>
       )}
-      <div className="nest-best-copy">
+      <div className="nest-best-copy rise" data-lag="1">
         <h2 id="nest-best-title">{title}</h2>
         {lead ? (
           <>

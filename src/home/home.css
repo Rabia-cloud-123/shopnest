@@ -1132,6 +1132,25 @@ main:has(.nest) {
   }
 }
 
+.rise {
+  transition:
+    opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.rise.rise-wait:not(.is-in) {
+  opacity: 0;
+  transform: translate3d(0, 32px, 0);
+}
+
+.rise.is-in[data-lag='1'] {
+  transition-delay: 0.1s;
+}
+
+.rise.is-in[data-lag='2'] {
+  transition-delay: 0.18s;
+}
+
 @keyframes hero-rule-fade {
   0% {
     opacity: 0;
@@ -1192,6 +1211,13 @@ main:has(.nest) {
   .hero-rule,
   .type-caret::before {
     animation: none;
+  }
+
+  .rise,
+  .rise.rise-wait:not(.is-in) {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 
   .shot strong,

@@ -1,8 +1,8 @@
 export default function AboutBand({ image, imageAlt }) {
   return (
     <section className="nest-about" aria-labelledby="nest-about-title">
-      {image ? <img src={image} alt={imageAlt} /> : <div className="nest-about-fallback" />}
-      <div className="nest-about-copy">
+      {image ? <img className="rise" src={image} alt={imageAlt} /> : <div className="nest-about-fallback rise" />}
+      <div className="nest-about-copy rise" data-lag="1">
         <h2 id="nest-about-title">About ShopNest</h2>
         <p>
           ShopNest keeps a short rail of men’s and women’s clothes. Each piece shows its cloth, its
