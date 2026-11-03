@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 
 const HERO_TITLE = 'Clothes for the week you actually wear.'
-const SLIDE_HOLD = 4500
-const SLIDE_MOVE = 900
+const SLIDE_HOLD = 5000
+const SLIDE_MOVE = 1500
 
 function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -35,10 +35,32 @@ function TypeLine({ text }) {
   )
 }
 
-export default function HomeHero({ slides, onShop, onOpen }) {
+function HeroFrame({ motion, label, onOpen, children }) {
+  if (onOpen) {
+    return (
+      <button className="nest-hero-photo" type="button" data-motion={motion} onClick={onOpen} aria-label={label}>
+        {children}
+      </button>
+    )
+  }
+  return (
+    <div className="nest-hero-photo" data-motion={motion}>
+      {children}
+    </div>
+  )
+}
+
+export default function HomeHero({
+  slides,
+  onShop,
+  onOpen,
+  title = HERO_TITLE,
+  titleId = 'nest-hero-title',
+}) {
   const [active, setActive] = useState(0)
   const [leaving, setLeaving] = useState(null)
   const [cycled, setCycled] = useState(false)
+  const [intro, setIntro] = useState(() => !prefersReducedMotion())
   const slideKey = slides.map((slide) => slide.id).join('|')
   const current = slides[active] ?? null
 
@@ -47,6 +69,12 @@ export default function HomeHero({ slides, onShop, onOpen }) {
     setLeaving(null)
     setCycled(false)
   }, [slideKey])
+
+  useEffect(() => {
+    if (!intro) return undefined
+    const timer = window.setTimeout(() => setIntro(false), SLIDE_MOVE)
+    return () => window.clearTimeout(timer)
+  }, [intro])
 
   useEffect(() => {
     if (prefersReducedMotion() || slides.length < 2) return undefined
@@ -83,35 +111,41 @@ export default function HomeHero({ slides, onShop, onOpen }) {
   return (
     <section
       className={current ? 'nest-hero nest-hero-home' : 'nest-hero nest-hero-home is-quiet'}
-      aria-labelledby="nest-hero-title"
+      style={{ '--hero-move': `${SLIDE_MOVE}ms` }}
+      aria-labelledby={titleId}
     >
       <div className="nest-hero-copy">
-        <h1 id="nest-hero-title">
-          <span className="sr-only">{HERO_TITLE}</span>
-          <TypeLine text={HERO_TITLE} />
+        <h1 id={titleId}>
+          <span className="sr-only">{title}</span>
+          <TypeLine text={title} />
         </h1>
-        <p>A short rail for men and women. Choose a size, then pay the courier in cash.</p>
-        <button className="nest-cta" type="button" onClick={onShop}>
-          Shop now
-        </button>
+        {onShop ? (
+          <>
+            <p>A short rail for men and women. Choose a size, then pay the courier in cash.</p>
+            <button className="nest-cta" type="button" onClick={onShop}>
+              Shop now
+            </button>
+          </>
+        ) : null}
       </div>
       {current ? (
-        <button
-          className="nest-hero-photo"
-          type="button"
-          onClick={() => onOpen(current.id)}
-          aria-label={`View ${current.name}`}
+        <HeroFrame
+          motion={leaving != null || intro ? 'run' : 'idle'}
+          label={onOpen ? `View ${current.name}` : undefined}
+          onOpen={onOpen ? () => onOpen(current.id) : undefined}
         >
           {slides.map((slide, index) => (
             <img
               key={slide.id}
               className={slideClass(index)}
               src={slide.image}
-              alt=""
+              alt={onOpen || index !== active ? '' : slide.alt || ''}
               decoding="async"
             />
           ))}
-        </button>
+          <span className="hero-rule hero-rule-left" aria-hidden="true" />
+          <span className="hero-rule hero-rule-right" aria-hidden="true" />
+        </HeroFrame>
       ) : (
         <p className="nest-hero-wait" role="status">
           Loading the rail…

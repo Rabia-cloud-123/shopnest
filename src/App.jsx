@@ -5,6 +5,7 @@ import { departmentLabel, formatPrice } from './data/products.js'
 import HomeFooter from './home/HomeFooter.jsx'
 import HomeNav from './home/HomeNav.jsx'
 import { followImageLight } from './home/imageLight.js'
+import HomeHero from './home/HomeHero.jsx'
 import HomePage from './home/HomePage.jsx'
 import './home/pages.css'
 
@@ -419,7 +420,6 @@ export default function App() {
               onToggleCart={() => (cartOpen ? setCartOpen(false) : openCart())}
             />
             <About products={products} />
-            <HomeFooter />
           </div>
         ) : (
           <HomePage
@@ -615,6 +615,24 @@ function ProductCard({ product, badge, picking, onOpen, onStartPick, onAdd }) {
   )
 }
 
+const aboutSlides = [
+  {
+    id: 'milan-coat',
+    image: '/about/milan-coat.jpg',
+    alt: 'A woman in a light blue coat and white boots, photographed in a city square.',
+  },
+  {
+    id: 'studio-portrait',
+    image: '/about/studio-portrait.jpg',
+    alt: 'A studio portrait of a woman in a sheer black blouse.',
+  },
+  {
+    id: 'navy-suit',
+    image: '/about/navy-suit.jpg',
+    alt: 'A man in a navy suit walking past a glass building.',
+  },
+]
+
 function About({ products }) {
   const women = products.find((product) => product.id === 'ivory-coat') ?? products.find((product) => product.department === 'women')
   const men = products.find((product) => product.id === 'chambray-shirt') ?? products.find((product) => product.department === 'men')
@@ -622,17 +640,7 @@ function About({ products }) {
 
   return (
     <article>
-      <section className="nest-hero" aria-labelledby="about-title">
-        <div className="nest-hero-copy">
-          <h1 id="about-title">A small shop, worn in the week.</h1>
-        </div>
-        <div className="nest-hero-photo">
-          <img
-            src="/about/editorial.jpg"
-            alt="A woman in a burgundy coat and sunglasses, photographed in daylight."
-          />
-        </div>
-      </section>
+      <HomeHero title="A small shop, worn in the week." titleId="about-title" slides={aboutSlides} />
       <section className="nest-about nest-about-flip" aria-labelledby="story-title">
         <div className="nest-about-copy">
           <h2 id="story-title">Our story</h2>
@@ -697,6 +705,7 @@ function About({ products }) {
           </div>
         ) : null}
       </section>
+      <HomeFooter />
     </article>
   )
 }

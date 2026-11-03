@@ -65,7 +65,7 @@ export default function HomePage({
       <ArrivalSection title="New arrivals" products={arrivals} onOpen={onOpen} />
       <BestSellerSection title="Best sellers" products={bestsellers} onOpen={onOpen} />
       {children}
-      <PromoSection coats={coats} evening={evening} onOpen={onOpen} />
+      {coats || evening ? <PromoSection coats={coats} evening={evening} onOpen={onOpen} /> : null}
       <AboutBand
         image={aboutImage?.image}
         imageAlt={aboutImage ? `${aboutImage.name}, ${aboutImage.fabric}` : ''}
