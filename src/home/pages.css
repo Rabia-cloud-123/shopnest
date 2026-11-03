@@ -378,6 +378,17 @@
   }
 }
 
+@media (min-width: 2200px) and (min-height: 1800px) {
+  .nest-story .nest-hero {
+    min-height: 0;
+  }
+
+  .nest-story .nest-hero-photo img {
+    height: min(1000px, calc(100svh - 4.75rem));
+    min-height: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .staff-table tbody tr,
   .piece-back svg {

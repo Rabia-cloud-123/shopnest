@@ -25,11 +25,17 @@ export default function HomePage({
   onToggleCart,
   children,
 }) {
-  const hero =
-    findProduct(products, 'ivory-coat') ??
-    findProduct(products, 'camel-coat') ??
-    products[0] ??
-    null
+  const heroOrder = ['ivory-coat', 'camel-coat', 'red-gown', 'chambray-shirt', 'blossom-midi', 'linen-overshirt']
+  const heroSlides = []
+  for (const id of heroOrder) {
+    const product = findProduct(products, id)
+    if (product?.image) heroSlides.push(product)
+  }
+  for (const product of products) {
+    if (heroSlides.length >= 5) break
+    if (product?.image && !heroSlides.some((slide) => slide.id === product.id)) heroSlides.push(product)
+  }
+  const hero = heroSlides[0] ?? null
   const menLead = findProduct(products, 'chambray-shirt') ?? products.find((product) => product.department === 'men')
   const womenLead = findProduct(products, 'ivory-coat') ?? products.find((product) => product.department === 'women')
   const coats = findProduct(products, 'camel-coat') ?? findProduct(products, 'ivory-coat')
@@ -48,7 +54,7 @@ export default function HomePage({
         onDepartment={onDepartment}
         onToggleCart={onToggleCart}
       />
-      <HomeHero product={hero} onShop={onShop} onOpen={onOpen} />
+      <HomeHero slides={heroSlides} onShop={onShop} onOpen={onOpen} />
       <CategorySection
         men={menLead}
         women={womenLead}
